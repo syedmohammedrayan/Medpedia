@@ -1,0 +1,197 @@
+<mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="1">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- TITLE -->
+    <mxCell id="title" value="MedGraph: Agentic LLM Pipeline for Automated Biomedical Evidence Synthesis" style="text;html=1;align=center;verticalAlign=middle;resizable=0;strokeColor=none;fillColor=none;fontSize=20;fontStyle=1;fontColor=#1565C0;" vertex="1" parent="1">
+      <mxGeometry x="150" y="15" width="1100" height="40" as="geometry" />
+    </mxCell>
+
+    <!-- USER -->
+    <mxCell id="user" value="&lt;b&gt;👤 Clinician / Researcher&lt;/b&gt;&lt;br/&gt;Free-text Clinical Query" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1565C0;strokeColor=#0D47A1;fontColor=#FFFFFF;fontSize=13;shadow=1;arcSize=50;" vertex="1" parent="1">
+      <mxGeometry x="560" y="70" width="280" height="65" as="geometry" />
+    </mxCell>
+
+    <!-- FRONTEND -->
+    <mxCell id="fe" value="&lt;b&gt;🖥️  Web Frontend&lt;/b&gt;&lt;br/&gt;Query Input · Live Streaming Result Display" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#5C6BC0;strokeColor=#3949AB;fontColor=#FFFFFF;fontSize=12;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="500" y="168" width="400" height="55" as="geometry" />
+    </mxCell>
+
+    <!-- FASTAPI BG -->
+    <mxCell id="apiBg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E0F7FA;strokeColor=#00838F;strokeWidth=3;opacity=60;" vertex="1" parent="1">
+      <mxGeometry x="110" y="248" width="1180" height="80" as="geometry" />
+    </mxCell>
+
+    <mxCell id="apiLbl" value="🌐  FastAPI REST Layer  (src/api/)" style="text;html=1;align=left;verticalAlign=top;resizable=0;strokeColor=none;fillColor=none;fontSize=11;fontStyle=1;fontColor=#006064;" vertex="1" parent="1">
+      <mxGeometry x="120" y="250" width="280" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- EP1 -->
+    <mxCell id="ep1" value="&lt;b&gt;POST /research/start&lt;/b&gt;&lt;br/&gt;{ query, thread_id }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00838F;strokeColor=#006064;fontColor=#FFFFFF;fontSize=11;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="130" y="263" width="260" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- SSE -->
+    <mxCell id="sse" value="&lt;b&gt;Server-Sent Events (SSE)&lt;/b&gt;&lt;br/&gt;astream_events v2  ·  token  ·  interrupt  ·  node_start  ·  node_end" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00695C;strokeColor=#004D40;fontColor=#FFFFFF;fontSize=11;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="430" y="263" width="540" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- EP2 -->
+    <mxCell id="ep2" value="&lt;b&gt;POST /research/resume-email&lt;/b&gt;&lt;br/&gt;{ email, thread_id }" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#00838F;strokeColor=#006064;fontColor=#FFFFFF;fontSize=11;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="1020" y="263" width="260" height="50" as="geometry" />
+    </mxCell>
+
+    <!-- LANGGRAPH BG -->
+    <mxCell id="lgBg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECEFF1;strokeColor=#455A64;strokeWidth=3;opacity=80;" vertex="1" parent="1">
+      <mxGeometry x="50" y="358" width="1300" height="185" as="geometry" />
+    </mxCell>
+
+    <mxCell id="lgLbl" value="🔄  LangGraph Agentic Pipeline  —  src/agent/graph.py" style="text;html=1;align=left;verticalAlign=top;strokeColor=none;fillColor=none;fontSize=12;fontStyle=1;fontColor=#37474F;" vertex="1" parent="1">
+      <mxGeometry x="60" y="362" width="520" height="20" as="geometry" />
+    </mxCell>
+
+    <!-- NODE 1 -->
+    <mxCell id="n1" value="&lt;b&gt;①  med_query_ingestor&lt;/b&gt;&lt;hr/&gt;🤖 ReAct Agent&lt;br/&gt;Gemini 2.5 Flash (OpenRouter)&lt;br/&gt;Tool: pubmed_to_pmc_full_text_search" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1B5E20;strokeColor=#2E7D32;fontColor=#FFFFFF;fontSize=11;shadow=1;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="68" y="383" width="285" height="135" as="geometry" />
+    </mxCell>
+
+    <!-- NODE 2 -->
+    <mxCell id="n2" value="&lt;b&gt;②  med_evidence_builder&lt;/b&gt;&lt;hr/&gt;🧠 Direct LLM Call&lt;br/&gt;Gemini 2.5 Flash (no tool loop)&lt;br/&gt;10 Study Types · 🟢 🟡 🔴" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E65100;strokeColor=#BF360C;fontColor=#FFFFFF;fontSize=11;shadow=1;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="393" y="383" width="285" height="135" as="geometry" />
+    </mxCell>
+
+    <!-- NODE 3 -->
+    <mxCell id="n3" value="&lt;b&gt;③  email_collector&lt;/b&gt;&lt;hr/&gt;⏸️ interrupt()&lt;br/&gt;Human-in-the-Loop&lt;br/&gt;Pauses graph · Awaits email" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A148C;strokeColor=#6A1B9A;fontColor=#FFFFFF;fontSize=11;shadow=1;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="718" y="383" width="285" height="135" as="geometry" />
+    </mxCell>
+
+    <!-- NODE 4 -->
+    <mxCell id="n4" value="&lt;b&gt;④  med_email_dispatcher&lt;/b&gt;&lt;hr/&gt;⚡ Direct Tool Call (No LLM)&lt;br/&gt;Markdown → Styled HTML&lt;br/&gt;SMTP · Medical Disclaimer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#880E4F;strokeColor=#AD1457;fontColor=#FFFFFF;fontSize=11;shadow=1;verticalAlign=middle;" vertex="1" parent="1">
+      <mxGeometry x="1043" y="383" width="285" height="135" as="geometry" />
+    </mxCell>
+
+    <!-- NCBI -->
+    <mxCell id="ncbi" value="&lt;b&gt;🔬  NCBI E-Utilities API&lt;/b&gt;&lt;hr/&gt;① esearch  →  PMIDs (retmax=10)&lt;br/&gt;② esummary  →  Title · Authors · Journal&lt;br/&gt;③ efetch  →  Abstract XML" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#33691E;strokeColor=#558B2F;fontColor=#FFFFFF;fontSize=11;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="68" y="590" width="285" height="110" as="geometry" />
+    </mxCell>
+
+    <!-- STATE -->
+    <mxCell id="state" value="&lt;b&gt;💾  MedResearchState&lt;/b&gt;&lt;br/&gt;MemorySaver Checkpointer&lt;hr/&gt;· messages&lt;br/&gt;· articles_report&lt;br/&gt;· evidence_report&lt;br/&gt;· recipient_email&lt;br/&gt;· email_status" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#37474F;strokeColor=#546E7A;fontColor=#FFFFFF;fontSize=11;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="1390" y="375" width="190" height="175" as="geometry" />
+    </mxCell>
+
+    <!-- SMTP -->
+    <mxCell id="smtp" value="&lt;b&gt;📧  SMTP Server&lt;/b&gt;&lt;br/&gt;Gmail  ·  TLS Port 587" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1A237E;strokeColor=#283593;fontColor=#FFFFFF;fontSize=12;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="1043" y="590" width="285" height="55" as="geometry" />
+    </mxCell>
+
+    <!-- INBOX -->
+    <mxCell id="inbox" value="&lt;b&gt;📬  User Inbox&lt;/b&gt;  —  Styled HTML Evidence Report  ·  Evidence Badges  ·  PubMed Article Links" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0D47A1;strokeColor=#1565C0;fontColor=#FFFFFF;fontSize=11;shadow=1;" vertex="1" parent="1">
+      <mxGeometry x="993" y="685" width="385" height="55" as="geometry" />
+    </mxCell>
+
+    <!-- ═══════════ EDGES ═══════════ -->
+
+    <!-- User → Frontend -->
+    <mxCell id="e1" value="clinical query" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#1565C0;fontColor=#1565C0;fontSize=10;fontStyle=1;strokeWidth=2;" edge="1" source="user" target="fe" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- Frontend → EP1 -->
+    <mxCell id="e2" value="HTTP POST" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#455A64;fontSize=10;strokeWidth=1.5;" edge="1" source="fe" target="ep1" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- SSE → Frontend (dashed back) -->
+    <mxCell id="e3" value="stream events" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#455A64;fontSize=10;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" source="sse" target="fe" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- EP1 → SSE -->
+    <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#006064;fontSize=10;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="ep1" target="sse" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- SSE → LangGraph (invoke) -->
+    <mxCell id="e5" value="invoke graph" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#00695C;fontColor=#00695C;fontSize=10;fontStyle=1;strokeWidth=2;" edge="1" source="sse" target="lgBg" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- N1 → N2 -->
+    <mxCell id="e6" value="articles_report" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#546E7A;fontColor=#263238;fontSize=10;fontStyle=1;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="n1" target="n2" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- N2 → N3 -->
+    <mxCell id="e7" value="evidence_report" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#546E7A;fontColor=#263238;fontSize=10;fontStyle=1;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="n2" target="n3" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- N3 → N4 -->
+    <mxCell id="e8" value="recipient_email" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#546E7A;fontColor=#263238;fontSize=10;fontStyle=1;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="n3" target="n4" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- N1 → NCBI -->
+    <mxCell id="e9" value="REST API · NCBI Key" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#33691E;fontColor=#33691E;fontSize=10;fontStyle=1;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" source="n1" target="ncbi" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- N3 → User (interrupt prompt) -->
+    <mxCell id="e10" value="interrupt: request email" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#6A1B9A;fontColor=#6A1B9A;fontSize=10;fontStyle=1;dashed=1;strokeWidth=2;exitX=0.5;exitY=0;entryX=0.7;entryY=1;" edge="1" source="n3" target="user" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- User → EP2 (provide email to resume) -->
+    <mxCell id="e11" value="provide email" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#455A64;fontSize=10;strokeWidth=1.5;exitX=1;exitY=0.5;entryX=0.5;entryY=0;" edge="1" source="user" target="ep2" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- EP2 → N3 (resume) -->
+    <mxCell id="e12" value="resume graph" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#4A148C;fontColor=#4A148C;fontSize=10;strokeWidth=1.5;" edge="1" source="ep2" target="n3" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- N4 → SMTP -->
+    <mxCell id="e13" value="HTML email" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#880E4F;fontColor=#880E4F;fontSize=10;fontStyle=1;strokeWidth=2;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" source="n4" target="smtp" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- SMTP → Inbox -->
+    <mxCell id="e14" value="TLS delivery ✅" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#0D47A1;fontColor=#0D47A1;fontSize=10;fontStyle=1;strokeWidth=2;" edge="1" source="smtp" target="inbox" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- LangGraph ↔ State -->
+    <mxCell id="e15" value="read / write state" style="edgeStyle=orthogonalEdgeStyle;html=1;strokeColor=#546E7A;fontColor=#37474F;fontSize=10;strokeWidth=1.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" source="lgBg" target="state" parent="1">
+      <mxGeometry relative="1" as="geometry" />
+    </mxCell>
+
+    <!-- LEGEND -->
+    <mxCell id="legBg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#90A4AE;strokeWidth=1;opacity=80;" vertex="1" parent="1">
+      <mxGeometry x="68" y="730" width="700" height="55" as="geometry" />
+    </mxCell>
+
+    <mxCell id="legTitle" value="&lt;b&gt;Legend:&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;fontSize=11;fontColor=#37474F;" vertex="1" parent="1">
+      <mxGeometry x="78" y="733" width="60" height="20" as="geometry" />
+    </mxCell>
+
+    <mxCell id="l1" value="① ReAct Agent + PubMed" style="rounded=1;fillColor=#1B5E20;strokeColor=#2E7D32;fontColor=#fff;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="78" y="753" width="155" height="24" as="geometry" />
+    </mxCell>
+
+    <mxCell id="l2" value="② Direct LLM Evidence Builder" style="rounded=1;fillColor=#E65100;strokeColor=#BF360C;fontColor=#fff;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="243" y="753" width="175" height="24" as="geometry" />
+    </mxCell>
+
+    <mxCell id="l3" value="③ Human-in-the-Loop" style="rounded=1;fillColor=#4A148C;strokeColor=#6A1B9A;fontColor=#fff;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="428" y="753" width="145" height="24" as="geometry" />
+    </mxCell>
+
+    <mxCell id="l4" value="④ Direct Tool — SMTP Email" style="rounded=1;fillColor=#880E4F;strokeColor=#AD1457;fontColor=#fff;fontSize=10;" vertex="1" parent="1">
+      <mxGeometry x="583" y="753" width="175" height="24" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>

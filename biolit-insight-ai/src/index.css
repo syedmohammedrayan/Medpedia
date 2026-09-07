@@ -1,0 +1,195 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 262 83% 58%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 239 84% 67%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #ffffff;
+    letter-spacing: -0.011em;
+  }
+  h1, h2, h3, h4 { letter-spacing: -0.03em; font-weight: 700; }
+}
+
+/* ─── Scrollbar ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #c7d2fe; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #818cf8; }
+
+/* ─── Floating navbar glass ─────────────────────────── */
+.navbar-glass {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 24px rgba(99,102,241,0.08);
+}
+
+/* ─── Premium colorful hero background ──────────────── */
+.hero-premium {
+  background:
+    radial-gradient(ellipse 90% 70% at 0% 0%, rgba(99,102,241,0.18) 0%, transparent 52%),
+    radial-gradient(ellipse 70% 60% at 100% 0%, rgba(139,92,246,0.14) 0%, transparent 52%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(6,182,212,0.11) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 0% 100%, rgba(245,158,11,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 50% at 50% 50%, rgba(236,72,153,0.04) 0%, transparent 60%),
+    #f8f9ff;
+}
+
+/* ─── White elevated card ────────────────────────────── */
+.card-elevated {
+  background: #ffffff;
+  border: 1px solid #e8eaf6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(99,102,241,0.05);
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+.card-elevated:hover {
+  box-shadow: 0 4px 20px rgba(99,102,241,0.12), 0 1px 3px rgba(0,0,0,0.06);
+  border-color: #c7d2fe;
+  transform: translateY(-2px);
+}
+
+/* ─── Colorful feature card variants ────────────────── */
+.feat-card {
+  transition: box-shadow 0.22s ease, transform 0.22s ease;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.feat-card:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+  transform: translateY(-4px);
+}
+.feat-indigo  { background: linear-gradient(145deg, #eef2ff 0%, #e0e7ff 100%); border: 1px solid #a5b4fc; }
+.feat-violet  { background: linear-gradient(145deg, #f5f3ff 0%, #ede9fe 100%); border: 1px solid #c4b5fd; }
+.feat-cyan    { background: linear-gradient(145deg, #ecfeff 0%, #cffafe 100%); border: 1px solid #67e8f9; }
+.feat-emerald { background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #6ee7b7; }
+.feat-rose    { background: linear-gradient(145deg, #fff1f2 0%, #ffe4e6 100%); border: 1px solid #fda4af; }
+.feat-amber   { background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%); border: 1px solid #fcd34d; }
+
+/* ─── Stat cards (soft, eye-friendly) ───────────────── */
+.stat-card { transition: box-shadow 0.2s ease, transform 0.2s ease; }
+.stat-indigo  { background: #eef2ff; border: 1.5px solid #a5b4fc; box-shadow: 0 2px 14px rgba(99,102,241,0.12); }
+.stat-violet  { background: #f5f3ff; border: 1.5px solid #c4b5fd; box-shadow: 0 2px 14px rgba(139,92,246,0.12); }
+.stat-emerald { background: #ecfdf5; border: 1.5px solid #6ee7b7; box-shadow: 0 2px 14px rgba(16,185,129,0.12); }
+.stat-cyan    { background: #ecfeff; border: 1.5px solid #67e8f9; box-shadow: 0 2px 14px rgba(6,182,212,0.12); }
+
+/* ─── Search bar ─────────────────────────────────────── */
+.search-wrap {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 0 0 0px rgba(99,102,241,0);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.search-wrap:focus-within {
+  border-color: #818cf8;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06), 0 0 0 4px rgba(99,102,241,0.12);
+}
+
+/* ─── Badges ─────────────────────────────────────────── */
+.badge-indigo {
+  background: linear-gradient(135deg, #ede9fe, #e0e7ff);
+  border: 1px solid #c4b5fd;
+  color: #4f46e5;
+}
+.badge-gradient {
+  background: linear-gradient(135deg, #fef3c7 0%, #ede9fe 50%, #cffafe 100%);
+  border: 1px solid #c4b5fd;
+  color: #4f46e5;
+}
+
+/* ─── Gradient text ──────────────────────────────────── */
+.text-gradient-pro {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.text-gradient-vivid {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 35%, #ec4899 65%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── CTA section ────────────────────────────────────── */
+.cta-gradient {
+  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 40%, #0e7490 100%);
+  box-shadow: 0 8px 40px rgba(79,70,229,0.35);
+}
+
+/* ─── Stat pill (legacy) ─────────────────────────────── */
+.stat-pill { background: #f8fafc; border: 1px solid #e2e8f0; }
+
+/* ─── Chat bubble agent ─────────────────────────────── */
+.bubble-agent {
+  background: #ffffff;
+  border: 1px solid #e8eaf6;
+  box-shadow: 0 1px 4px rgba(99,102,241,0.06);
+}
+
+/* ─── Btn Primary ────────────────────────────────────── */
+.btn-primary {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(79,70,229,0.32);
+  transition: all 0.18s ease;
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 5px 20px rgba(79,70,229,0.45);
+  transform: translateY(-1px);
+}
+.btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* ─── Agent workspace background ────────────────────── */
+.agent-workspace {
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 90%, rgba(99,102,241,0.07) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 90% 10%, rgba(139,92,246,0.05) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, rgba(6,182,212,0.03) 0%, transparent 60%),
+    #f5f6ff;
+}
+
+/* ─── Input clean ────────────────────────────────────── */
+.input-clean {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  color: #0f172a;
+  transition: border-color 0.15s;
+}
+.input-clean:focus {
+  outline: none;
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.10);
+}
+.input-clean::placeholder { color: #94a3b8; }

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="fav-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#6366f1"/>
+      <stop offset="55%"  stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+    <!-- Clip path in final coordinate space (no transform) -->
+    <clipPath id="fav-lens">
+      <circle cx="13.156" cy="13.156" r="7.475"/>
+    </clipPath>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="32" height="32" rx="7" fill="url(#fav-bg)"/>
+  <!-- Top edge inner highlight (depth) -->
+  <rect width="32" height="1.5" rx="7" fill="white" opacity="0.18"/>
+
+  <!-- Lens glass fill -->
+  <circle cx="13.156" cy="13.156" r="7.475" fill="rgba(255,255,255,0.11)"/>
+  <!-- Lens ring -->
+  <circle cx="13.156" cy="13.156" r="7.475" stroke="white" stroke-width="1.87" fill="none"/>
+
+  <!-- ECG / heartbeat pulse — clipped to lens -->
+  <g clip-path="url(#fav-lens)">
+    <polyline
+      points="4.6,13.2 8.7,13.2 9.7,7.9 11.4,18.4 12.6,10.3 13.6,13.2 21.7,13.2"
+      stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- Glass gleam (top-left) -->
+  <circle cx="9.5" cy="9.1" r="1.6" fill="white" opacity="0.22"/>
+
+  <!-- Magnifying glass handle -->
+  <line x1="18.8" y1="18.8" x2="25.8" y2="25.8" stroke="white" stroke-width="2.6" stroke-linecap="round"/>
+
+  <!-- ECG peak accent dot -->
+  <circle cx="9.7" cy="7.9" r="1.2" fill="white" opacity="0.75"/>
+</svg>
