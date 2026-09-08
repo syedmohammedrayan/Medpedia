@@ -1,8 +1,8 @@
-# BioEvidence AI
+# Medpedia
 
 > Agentic biomedical literature search and evidence synthesis platform
 
-BioEvidence AI is an end-to-end biomedical research assistant that turns a natural-language clinical question into a structured, evidence-oriented literature brief. It combines a React research workspace with a FastAPI and LangGraph backend that retrieves current PubMed literature, synthesizes study findings, classifies evidence strength, streams progress to the browser, and can deliver the completed report by email.
+Medpedia is an end-to-end biomedical research assistant that turns a natural-language clinical question into a structured, evidence-oriented literature brief. It combines a React research workspace with a FastAPI and LangGraph backend that retrieves current PubMed literature, synthesizes study findings, classifies evidence strength, streams progress to the browser, and can deliver the completed report by email.
 
 ## Why It Matters
 
@@ -44,7 +44,7 @@ The frontend lives in [`biolit-insight-ai/`](biolit-insight-ai/). The backend li
 ## Repository Structure
 
 ```text
-BioEvidence-AI/
+Medpedia/
 ├── biolit-insight-ai/          # React + TypeScript frontend
 │   ├── src/components/         # Research UI and reusable components
 │   ├── src/pages/              # Landing and research workspace pages

@@ -91,19 +91,9 @@ const Navbar = () => {
             {/* Text block */}
             <div className="flex flex-col leading-none select-none">
               <div className="flex items-center gap-1.5">
-                <span className="font-black text-slate-900 text-[15px] tracking-tight">Medical Research</span>
+                <span className="font-black text-slate-900 text-[15px] tracking-tight">Medpedia</span>
               </div>
               <div className="flex items-center gap-1.5 mt-[3px]">
-                <span
-                  className="font-black text-[14px] tracking-tight"
-                  style={{
-                    background: "linear-gradient(90deg, #6366f1, #7c3aed)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                  }}
-                >
-                  Assistant
-                </span>
                 <span className="text-[9px] font-black px-[5px] py-[2px] rounded-md bg-gradient-to-r from-indigo-500 to-violet-600 text-white leading-none tracking-wide shadow-sm">
                   AI
                 </span>

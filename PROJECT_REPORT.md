@@ -1,4 +1,4 @@
-# BioEvidence AI
+# Medpedia
 ## Recruiter-Facing Project Report
 
 **Project type:** Full-stack AI research assistant  
@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-BioEvidence AI is a full-stack biomedical research assistant designed to reduce the friction between asking a clinical research question and producing a structured first-pass literature brief. A user submits a natural-language question through a React interface. The backend expands the question, searches PubMed, synthesizes the returned studies, classifies evidence strength, streams progress back to the browser, and optionally sends the completed report by email.
+Medpedia is a full-stack biomedical research assistant designed to reduce the friction between asking a clinical research question and producing a structured first-pass literature brief. A user submits a natural-language question through a React interface. The backend expands the question, searches PubMed, synthesizes the returned studies, classifies evidence strength, streams progress back to the browser, and optionally sends the completed report by email.
 
 The project demonstrates applied AI engineering rather than a standalone chatbot: tool-using agents, graph-based orchestration, typed state, streaming APIs, human-in-the-loop execution, external data retrieval, and report delivery are combined into one user workflow.
 

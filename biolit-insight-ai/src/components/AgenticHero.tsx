@@ -72,7 +72,7 @@ export default function AgenticHero() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-indigo-500" />
             </span>
-            Medical Research Assistant · Agent running
+            Medpedia · Agent running
           </div>
           {phase >= steps.length && (
             <motion.span
