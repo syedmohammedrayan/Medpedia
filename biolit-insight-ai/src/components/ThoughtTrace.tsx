@@ -1,3 +1,5 @@
+// Renders the progress UI showing which LangGraph node (agent step) is currently active.
+// Reacts to node_start and node_end events streaming from the backend.
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, Loader2, Terminal, Clock } from "lucide-react";

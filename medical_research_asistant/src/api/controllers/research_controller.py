@@ -1,3 +1,5 @@
+# Interacts directly with the LangGraph state machine.
+# Responsible for streaming the graph's execution events (tokens, node transitions) to the frontend.
 import json
 from typing import AsyncGenerator
 from langchain_core.messages import HumanMessage
@@ -8,6 +10,7 @@ class ResearchController:
     @staticmethod
     async def astream_research(query: str, thread_id: str) -> AsyncGenerator[str, None]:
         """Streams research events (tokens and state updates) to the frontend."""
+        # The thread_id ensures LangGraph can persist and retrieve this specific session's state.
         config = {"configurable": {"thread_id": thread_id}}
         inputs = {"messages": [HumanMessage(content=query)]}
 
@@ -16,6 +19,7 @@ class ResearchController:
             kind = event["event"]
 
             # 1. Node Start/End Events
+            # Lets the frontend know which agent/step is currently running.
             if kind == "on_chain_start":
                 # We can filter for specific node names if needed
                 node_name = event.get("metadata", {}).get("langgraph_node")
@@ -23,6 +27,7 @@ class ResearchController:
                     yield f"data: {json.dumps({'type': 'node_start', 'node': node_name})}\n\n"
 
             # 2. Token Streaming (on_chat_model_stream)
+            # Sends each token to the UI in real-time as the LLM generates it.
             elif kind == "on_chat_model_stream":
                 content = event["data"]["chunk"].content
                 if content:
@@ -35,6 +40,7 @@ class ResearchController:
                     yield f"data: {json.dumps({'type': 'node_end', 'node': node_name})}\n\n"
 
         # Check for interrupt at the end of the stream
+        # If the graph paused (e.g. waiting for email), retrieve the prompt and send it to the frontend.
         state = await graph.aget_state(config)
         if state.next:
             interrupt_val = state.tasks[0].interrupts[0].value if state.tasks and state.tasks[0].interrupts else None
@@ -45,8 +51,10 @@ class ResearchController:
     @staticmethod
     async def astream_resume(email: str, thread_id: str) -> AsyncGenerator[str, None]:
         """Streams events after resuming from an interrupt."""
+        # Re-uses the same thread_id to access the paused graph state.
         config = {"configurable": {"thread_id": thread_id}}
 
+        # Passes the provided email back into the graph via Command(resume=...).
         async for event in graph.astream_events(Command(resume=email), config=config, version="v2"):
             kind = event["event"]
 

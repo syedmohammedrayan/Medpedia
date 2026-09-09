@@ -1,3 +1,6 @@
+# Defines the behavior and persona of the LLMs in the workflow.
+# These system instructions dictate how the models extract terms, generate reports, and dispatch emails.
+
 MED_QUERY_INGESTOR_INSTRUCTION = """You are a biomedical literature search assistant. Your goal is to understand user queries related to biomedical topics and initiate searches.
 
 Follow these steps for every user query:

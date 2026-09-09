@@ -1,3 +1,5 @@
+# Handles the main medical research workflow using LangGraph.
+# Each node performs one stage of the research process, and the graph defines how they connect.
 import os
 import time
 from typing import Any, Dict
@@ -27,6 +29,7 @@ from agent.prompts import (
 )
 
 # ── Model ──────────────────────────────────────────────────────────────────────
+# Configures the Gemini model. Temperature is 0 to keep outputs factual and deterministic.
 model = ChatOpenRouter(
     model="google/gemini-2.5-flash",
     temperature=0,
@@ -35,10 +38,9 @@ model = ChatOpenRouter(
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
 # Custom State
-# We extend the basic messages list with two extra fields:
-#   recipient_email  — collected via the HITL interrupt
-#   email_status     — final result from the dispatcher agent
+# Defines the shared memory (state) that gets passed between all LangGraph nodes.
 # ──────────────────────────────────────────────────────────────────────────────
 class MedResearchState(MessagesState):
     """Extends MessagesState with email and report fields.
@@ -53,6 +55,7 @@ class MedResearchState(MessagesState):
 # ──────────────────────────────────────────────────────────────────────────────
 # Agent 1 — Med Query Ingestor (ReAct)
 # ──────────────────────────────────────────────────────────────────────────────
+# Gives the LLM access to the PubMed search tool so it can autonomously fetch research.
 med_query_react_agent = create_react_agent(
     model,
     tools=[pubmed_to_pmc_full_text_search],
@@ -168,6 +171,10 @@ def med_email_dispatcher_node(state: MedResearchState) -> Dict[str, Any]:
 # ──────────────────────────────────────────────────────────────────────────────
 # Build the Sequential Graph
 # ──────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# Build the Sequential Graph
+# ──────────────────────────────────────────────────────────────────────────────
+# Defines the workflow structure and controls how each research step connects to the next.
 builder = StateGraph(MedResearchState)
 
 builder.add_node("med_query_ingestor",    med_query_ingestor_node)
@@ -177,11 +184,12 @@ builder.add_node("med_email_dispatcher",  med_email_dispatcher_node)
 
 builder.add_edge(START,                  "med_query_ingestor")
 builder.add_edge("med_query_ingestor",   "med_evidence_builder")
-builder.add_edge("med_evidence_builder", "email_collector")            # pause here
+builder.add_edge("med_evidence_builder", "email_collector")            # pause here for human input
 builder.add_edge("email_collector",      "med_email_dispatcher")
 builder.add_edge("med_email_dispatcher", END)
 
 # Create a memory saver for local persistence (essential for FastAPI and Interrupts)
+# Keeps workflow state in memory so the interrupted graph can resume using the same thread_id.
 memory = MemorySaver()
 
 # LangGraph API manages persistence automatically — no custom checkpointer needed.

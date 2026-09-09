@@ -1,4 +1,6 @@
-﻿import { Toaster } from "@/components/ui/toaster";
+// The main React application component.
+// Sets up global providers (like Toaster for notifications) and handles application routing.
+import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

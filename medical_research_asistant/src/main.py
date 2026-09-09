@@ -1,3 +1,5 @@
+# Main entry point for the FastAPI backend.
+# Initializes the API server that the React frontend communicates with.
 import os
 import sys
 from fastapi import FastAPI
@@ -16,6 +18,7 @@ app = FastAPI(
 ) 
  
 # Enable CORS for frontend integration
+# Allows the React frontend (running on a different port) to make API requests to this backend.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

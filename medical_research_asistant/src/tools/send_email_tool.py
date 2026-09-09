@@ -7,6 +7,8 @@ med_email_dispatcher node in the LangGraph pipeline.
 Sends the full evidence report (evidence cards + synthesis) as a
 styled HTML email. No CSV attachment is needed.
 """
+# Sends the final structured Markdown report via standard SMTP.
+# The tool automatically converts Markdown into styled HTML.
 
 import os
 import re
@@ -116,6 +118,7 @@ def send_email(
     Returns:
         "Email sent successfully." on success, or an error description.
     """
+    # Reads SMTP configuration securely from environment variables.
     smtp_user     = os.getenv("SMTP_USER")
     smtp_password = os.getenv("SMTP_PASSWORD")
     smtp_host     = os.getenv("SMTP_HOST", "smtp.gmail.com")

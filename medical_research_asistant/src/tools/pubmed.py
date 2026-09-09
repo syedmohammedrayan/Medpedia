@@ -1,3 +1,5 @@
+# Connects to the NCBI E-utilities API to retrieve biomedical research.
+# Uses esearch to find IDs, esummary for metadata, and efetch for abstracts.
 import os
 import time
 import json
@@ -11,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from langchain_core.tools import tool
 
 
+# Requires an NCBI API Key from the environment for higher rate limits.
 def _get_api_key() -> str | None:
     """Safely retrieve the NCBI API key from environment."""
     return os.getenv("NCBI_API_KEY") or None
@@ -122,6 +125,7 @@ def pubmed_to_pmc_full_text_search(query: str, max_results: int = 10) -> str:
     print(f"\n[TIMING] pubmed_tool → started | query: {query[:80]}")
 
     # ── Step 1: Search PubMed for IDs ──────────────────────────────────────
+    # Finds the article IDs matching the query, sorted by most recent.
     search_params = _build_params({
         "db": "pubmed",
         "term": query,
@@ -166,6 +170,7 @@ def pubmed_to_pmc_full_text_search(query: str, max_results: int = 10) -> str:
         print(f"[TIMING] pubmed_tool step2 esummary → {time.time()-t:.2f}s")
 
         # ── Step 3: Fetch abstracts via efetch XML ─────────────────────────
+        # Retrieves the actual abstract text for the found IDs.
         fetch_params = _build_params({
             "db": "pubmed",
             "id": ",".join(pmids),

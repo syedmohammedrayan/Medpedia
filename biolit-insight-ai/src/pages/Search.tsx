@@ -1,3 +1,5 @@
+// The main research interface where the user submits clinical queries.
+// Communicates with the FastAPI backend and processes real-time Server-Sent Events (SSE).
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -61,11 +63,14 @@ const Search = () => {
   }, [initialQuery]);
 
   useEffect(() => {
+    // Keeps the chat window automatically scrolled to the latest message as they stream in.
     if (scrollRef.current)
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, isLoading]);
 
   const sendMessage = async (text: string) => {
+    // Sends the user's research query to the backend API.
+    // Handles the Server-Sent Events (SSE) stream returned by LangGraph via FastAPI.
     setIsLoading(true);
     if (!sessionRef.current) sessionRef.current = `thread-${Date.now()}`;
     if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -75,6 +80,8 @@ const Search = () => {
     try {
       let url = API_URL;
       let body: any = { query: text, thread_id: sessionRef.current };
+      
+      // If we are currently paused and waiting for an email, send it to the resume endpoint instead.
       if (waitingForEmailRef.current) {
         url = "http://localhost:8000/research/resume-email";
         body = { email: text, thread_id: sessionRef.current };
@@ -120,6 +127,7 @@ const Search = () => {
 
   const handleServerMessage = (data: any) => {
     if (data.type === "token") {
+      // Appends real-time chunks from the LLM directly into the chat message content.
       setMessages((p) => {
         const last = p[p.length - 1];
         if (last?.type === "agent")
@@ -134,6 +142,7 @@ const Search = () => {
         return p;
       });
     } else if (data.type === "interrupt") {
+      // The backend paused execution. Update UI state to ask for the recipient's email.
       waitingForEmailRef.current = true;
       setMessages((p) => [...p, {
         id: Date.now().toString(), type: "agent",

@@ -1,4 +1,6 @@
-﻿import { useState } from "react";
+// A static UI component to simulate a secondary email prompt option.
+// The actual automated email dispatch logic is handled by the LangGraph interrupt workflow in Search.tsx.
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Dialog,

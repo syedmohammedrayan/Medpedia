@@ -1,3 +1,5 @@
+# Defines the API endpoints for the research workflow.
+# Receives requests from the frontend and passes them to the ResearchController.
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -15,6 +17,8 @@ class ResumeRequest(BaseModel):
 
 @router.post("/start")
 async def start_research(request: ResearchRequest):
+    # Starts the LangGraph research workflow and returns a streaming response.
+    # This allows the frontend to receive real-time updates as the LLM generates tokens.
     try:
         return StreamingResponse(
             ResearchController.astream_research(request.query, request.thread_id),
@@ -25,6 +29,8 @@ async def start_research(request: ResearchRequest):
 
 @router.post("/resume-email")
 async def resume_email(request: ResumeRequest):
+    # Resumes the paused LangGraph workflow with the collected email address.
+    # Returns a stream for the final email dispatch step.
     try:
         return StreamingResponse(
             ResearchController.astream_resume(request.email, request.thread_id),
