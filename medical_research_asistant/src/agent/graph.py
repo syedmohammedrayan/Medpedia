@@ -12,7 +12,7 @@ from langgraph.prebuilt import create_react_agent
 from langgraph.types import interrupt
 
 from langchain_core.messages import AIMessageChunk, ToolMessage, HumanMessage, AIMessage, SystemMessage
-from langchain_openrouter import ChatOpenRouter
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.checkpoint.memory import MemorySaver
 
 # Load environment variables from .env file
@@ -29,12 +29,35 @@ from agent.prompts import (
 )
 
 # ── Model ──────────────────────────────────────────────────────────────────────
-# Configures the Gemini model. Temperature is 0 to keep outputs factual and deterministic.
-model = ChatOpenRouter(
-    model="google/gemini-2.5-flash",
+# Configures the LLM directly via Google Gemini API. Configurable via GEMINI_MODEL in .env.
+gemini_model_name = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+if gemini_model_name.startswith("google/"):
+    gemini_model_name = gemini_model_name[len("google/"):]
+
+gemini_api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+
+model = ChatGoogleGenerativeAI(
+    model=gemini_model_name,
     temperature=0,
-    max_tokens=8192
+    max_tokens=4096,
+    api_key=gemini_api_key
 ) 
+
+def extract_text(content: Any) -> str:
+    """Extracts plain text from LLM message content regardless of format."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict) and "text" in item:
+                parts.append(item["text"])
+            elif hasattr(item, "text"):
+                parts.append(getattr(item, "text", ""))
+        return "".join(parts)
+    return str(content or "")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -66,10 +89,10 @@ med_query_react_agent = create_react_agent(
 async def med_query_ingestor_node(state: MedResearchState) -> Dict[str, Any]:
     """Runs the ingestor and returns a clean text summary for LangSmith."""
     t0 = time.time()
-    print(f"\n[TIMING] med_query_ingestor → started")
+    print(f"\n[TIMING] med_query_ingestor -> started")
     result = await med_query_react_agent.ainvoke({"messages": state["messages"]})
-    last_msg_content = result["messages"][-1].content
-    print(f"[TIMING] med_query_ingestor → done in {time.time() - t0:.2f}s | output chars: {len(last_msg_content)}")
+    last_msg_content = extract_text(result["messages"][-1].content)
+    print(f"[TIMING] med_query_ingestor -> done in {time.time() - t0:.2f}s | output chars: {len(last_msg_content)}")
     return {
         "messages": [AIMessage(content=last_msg_content)],
         "articles_report": last_msg_content,
@@ -86,7 +109,7 @@ async def med_evidence_builder_node(state: MedResearchState) -> Dict[str, Any]:
     """
     articles_list = state.get("articles_report", "No articles found.")
     t0 = time.time()
-    print(f"\n[TIMING] med_evidence_builder → started | input chars: {len(articles_list)}")
+    print(f"\n[TIMING] med_evidence_builder -> started | input chars: {len(articles_list)}")
     messages = [
         SystemMessage(content=MED_EVIDENCE_BUILDER_INSTRUCTION),
         HumanMessage(content=(
@@ -96,10 +119,11 @@ async def med_evidence_builder_node(state: MedResearchState) -> Dict[str, Any]:
         )),
     ]
     result = await model.ainvoke(messages)
-    print(f"[TIMING] med_evidence_builder → done in {time.time() - t0:.2f}s | output chars: {len(result.content)}")
+    evidence_text = extract_text(result.content)
+    print(f"[TIMING] med_evidence_builder -> done in {time.time() - t0:.2f}s | output chars: {len(evidence_text)}")
     return {
-        "messages": [AIMessage(content=result.content)],
-        "evidence_report": result.content,
+        "messages": [AIMessage(content=evidence_text)],
+        "evidence_report": evidence_text,
     }
 
 
@@ -252,7 +276,7 @@ def stream_graph(user_input: str, thread_id: str = "default"):
                 print(f"{'='*60}\n")
 
             if isinstance(message_chunk, AIMessageChunk):
-                print(message_chunk.content, end="", flush=True)
+                print(extract_text(message_chunk.content), end="", flush=True)
             elif isinstance(message_chunk, ToolMessage):
                 print(f"\n[Tool '{message_chunk.name}' result]: "
                       f"{message_chunk.content[:300]}…\n")

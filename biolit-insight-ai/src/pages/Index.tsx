@@ -1,12 +1,11 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AgenticHero from "@/components/AgenticHero";
 import {
   Search, ArrowRight, Database, BrainCircuit, FileBarChart2,
-  Shield, Zap, Mail, Stethoscope, CheckCircle2,
+  Shield, Zap, Mail
 } from "lucide-react";
 
 const exampleQueries = [
@@ -16,106 +15,74 @@ const exampleQueries = [
   "mRNA vaccine efficacy in elderly populations",
 ];
 
-const features = [
-  {
-    color: "indigo",
-    icon: Database,
-    badge: "35M+ Articles",
-    title: "Live PubMed Search",
-    desc: "Real-time access to 35M+ peer-reviewed articles from PubMed Central and MEDLINE databases.",
-  },
-  {
-    color: "violet",
-    icon: BrainCircuit,
-    badge: "Multi-Agent AI",
-    title: "Agentic Synthesis",
-    desc: "Multi-step AI pipeline that retrieves, ranks, and synthesizes clinical evidence automatically.",
-  },
-  {
-    color: "cyan",
-    icon: FileBarChart2,
-    badge: "Structured Data",
-    title: "Evidence Tables",
-    desc: "Structured evidence matrices with effect sizes, p-values, and study limitations — exportable.",
-  },
-  {
-    color: "emerald",
-    icon: Shield,
-    badge: "GRADE System",
-    title: "Quality Grading",
-    desc: "Automatic evidence quality assessment following GRADE methodology standards.",
-  },
-  {
-    color: "rose",
-    icon: Mail,
-    badge: "PDF + Email",
-    title: "Report Delivery",
-    desc: "Export your synthesis as a formatted PDF report or receive it directly to your email.",
-  },
-  {
-    color: "amber",
-    icon: Zap,
-    badge: "Real-time",
-    title: "Streaming Results",
-    desc: "Watch the AI agent work live — results stream token-by-token as analysis runs.",
-  },
+const stats = [
+  { value: "35.2M+", label: "Indexed Records", detail: "MEDLINE, PubMed Central & PMC" },
+  { value: "< 14s",   label: "Synthesis Latency", detail: "Multi-agent literature orchestration" },
+  { value: "GRADE",  label: "Certainty Standard", detail: "Objective evidence quality assessment" },
+  { value: "100%",   label: "Audited Citations", detail: "Direct DOI and PMCID verifiable backlinks" },
 ];
 
-const stats = [
-  { color: "indigo", icon: Database, value: "35M+", label: "PubMed Articles", sub: "MEDLINE + PMC" },
-  { color: "violet", icon: BrainCircuit, value: "AI", label: "Agentic Pipeline", sub: "Multi-step reasoning" },
-  { color: "emerald", icon: CheckCircle2, value: "GRADE", label: "Evidence Quality", sub: "Systematic grading" },
-  { color: "cyan", icon: Zap, value: "Live", label: "Streaming Results", sub: "Real-time output" },
+const capabilities = [
+  {
+    num: "01",
+    icon: Database,
+    title: "Live PubMed Central Retrieval",
+    desc: "Autonomous retrieval pipeline querying 35M+ peer-reviewed citations across MEDLINE and PMC for randomized controlled trials and meta-analyses.",
+    tag: "PMC ARCHIVE",
+  },
+  {
+    num: "02",
+    icon: BrainCircuit,
+    title: "Multi-Agent Synthesis Engine",
+    desc: "Specialized reasoning agents coordinate search parameter formulation, exclusion filtering, and comparative evidence synthesis.",
+    tag: "LANGGRAPH AGENTS",
+  },
+  {
+    num: "03",
+    icon: Shield,
+    title: "GRADE Certainty Grading",
+    desc: "Evaluates risk of bias, inconsistency, indirectness, and imprecision following standardized GRADE clinical methodology.",
+    tag: "QUALITY AUDIT",
+  },
+  {
+    num: "04",
+    icon: FileBarChart2,
+    title: "Structured Evidence Matrices",
+    desc: "Compiles study designs, sample sizes (n), primary clinical endpoints, effect sizes, and documented limitations into comparative tables.",
+    tag: "PICO FRAMEWORK",
+  },
+  {
+    num: "05",
+    icon: Mail,
+    title: "Archival Delivery & Export",
+    desc: "Transmit comprehensive research syntheses directly to clinical colleagues via formatted PDF reports and spreadsheet matrices.",
+    tag: "DISPATCH READY",
+  },
+  {
+    num: "06",
+    icon: Zap,
+    title: "Transparent Reasoning Stream",
+    desc: "Inspect intermediate search queries, isolated publication counts, and reasoning milestones token-by-token in real time.",
+    tag: "AUDITABLE AI",
+  },
 ];
 
 const steps = [
   {
-    color: "indigo",
     num: "01",
-    icon: Search,
-    title: "Enter Your Clinical Question",
-    desc: "Type any clinical or biomedical research question. Our system understands complex medical terminology and PICO frameworks.",
+    title: "Formulate Clinical Query",
+    desc: "Pose your question using natural clinical terminology or PICO frameworks. The engine parses therapeutic drug classes and target patient populations.",
   },
   {
-    color: "violet",
     num: "02",
-    icon: BrainCircuit,
-    title: "AI Searches & Analyzes",
-    desc: "The agent searches PubMed, extracts key data, grades evidence quality, and identifies patterns across studies.",
+    title: "Autonomous Systematic Extraction",
+    desc: "Agents isolate pertinent trials, extract statistical endpoints, filter confounding biases, and grade certainty using GRADE protocols.",
   },
   {
-    color: "emerald",
     num: "03",
-    icon: FileBarChart2,
-    title: "Receive Structured Report",
-    desc: "Get a comprehensive synthesis with evidence tables, narrative analysis, and a clinical verdict — ready to cite.",
+    title: "Receive Structured Synthesis",
+    desc: "A verified synthesis with full narrative analysis, structured evidence tables, and definitive clinical takeaways is compiled instantly.",
   },
-];
-
-const colorMap: Record<string, {
-  feat: string; iconBg: string; icon: string; badge: string;
-  stepBg: string; title: string; num: string;
-}> = {
-  indigo:  { feat: "feat-indigo",  iconBg: "bg-indigo-100",  icon: "text-indigo-600",  badge: "bg-indigo-100 text-indigo-700 border-indigo-300",  stepBg: "bg-indigo-50 border-indigo-200",  title: "text-indigo-800",  num: "text-indigo-300" },
-  violet:  { feat: "feat-violet",  iconBg: "bg-violet-100",  icon: "text-violet-600",  badge: "bg-violet-100 text-violet-700 border-violet-300",  stepBg: "bg-violet-50 border-violet-200",  title: "text-violet-800",  num: "text-violet-300" },
-  cyan:    { feat: "feat-cyan",    iconBg: "bg-cyan-100",    icon: "text-cyan-600",    badge: "bg-cyan-100 text-cyan-700 border-cyan-300",    stepBg: "bg-cyan-50 border-cyan-200",    title: "text-cyan-800",    num: "text-cyan-300" },
-  emerald: { feat: "feat-emerald", iconBg: "bg-emerald-100", icon: "text-emerald-600", badge: "bg-emerald-100 text-emerald-700 border-emerald-300", stepBg: "bg-emerald-50 border-emerald-200", title: "text-emerald-800", num: "text-emerald-300" },
-  rose:    { feat: "feat-rose",    iconBg: "bg-rose-100",    icon: "text-rose-600",    badge: "bg-rose-100 text-rose-700 border-rose-300",    stepBg: "bg-rose-50 border-rose-200",    title: "text-rose-800",    num: "text-rose-300" },
-  amber:   { feat: "feat-amber",   iconBg: "bg-amber-100",   icon: "text-amber-600",   badge: "bg-amber-100 text-amber-700 border-amber-300",   stepBg: "bg-amber-50 border-amber-200",   title: "text-amber-800",   num: "text-amber-300" },
-};
-
-const statColorMap: Record<string, { card: string; val: string; label: string; sub: string; icon: string }> = {
-  indigo:  { card: "stat-indigo",  val: "text-indigo-700",  label: "text-indigo-600",  sub: "text-indigo-400",  icon: "text-indigo-400" },
-  violet:  { card: "stat-violet",  val: "text-violet-700",  label: "text-violet-600",  sub: "text-violet-400",  icon: "text-violet-400" },
-  emerald: { card: "stat-emerald", val: "text-emerald-700", label: "text-emerald-600", sub: "text-emerald-400", icon: "text-emerald-400" },
-  cyan:    { card: "stat-cyan",    val: "text-cyan-700",    label: "text-cyan-600",    sub: "text-cyan-400",    icon: "text-cyan-400" },
-};
-
-const chipColors = [
-  "hover:border-indigo-300 hover:text-indigo-700 hover:bg-indigo-50",
-  "hover:border-violet-300 hover:text-violet-700 hover:bg-violet-50",
-  "hover:border-cyan-300 hover:text-cyan-700 hover:bg-cyan-50",
-  "hover:border-emerald-300 hover:text-emerald-700 hover:bg-emerald-50",
 ];
 
 const Index = () => {
@@ -128,259 +95,276 @@ const Index = () => {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="hero-premium min-h-screen flex flex-col"
-    >
+    <div className="editorial-paper min-h-screen flex flex-col text-[#211B20]">
       <Navbar />
 
-      <main className="flex-1 flex flex-col items-center px-6 pt-40 pb-20">
-        {/* ── Hero ─────────────────────────────────────────── */}
-        <div className="w-full max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center space-y-8"
-          >
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.06 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full badge-gradient text-xs font-semibold shadow-sm"
-            >
-              <span className="w-2 h-2 rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 animate-pulse" />
-              AI-Powered Clinical Research Engine
-              <span className="px-1.5 py-0.5 rounded-md bg-indigo-500 text-white text-[10px] font-bold">NEW</span>
-            </motion.div>
+      <main className="flex-1 flex flex-col items-center pt-20 sm:pt-24 pb-24 px-4 sm:px-6">
 
-            {/* Headline */}
-            <div className="space-y-3">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-slate-900 leading-[1.04]">
-                Your Intelligent
-                <br />
-                <span className="text-gradient-vivid">Medical Research</span>
-                <br />
-                <span className="text-slate-800">Assistant</span>
-              </h1>
-              <p className="text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
-                Ask any clinical question. The AI agent searches PubMed, extracts evidence,
-                grades quality, and returns a structured synthesis — in seconds.
-              </p>
-            </div>
+        {/* ── Reconstructed Typography-Led Hero (No Image, Staggered One After Another) ── */}
+        <section className="w-full max-w-6xl mx-auto pt-2 pb-14 sm:pb-20">
 
-            {/* Search bar */}
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="max-w-2xl mx-auto space-y-4"
-            >
-              <div className="search-wrap rounded-2xl flex items-center px-4 gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-200">
-                  <Search className="w-4 h-4 text-white" />
-                </div>
+          {/* Staggered 3-Line Display Headline ("One After Another" Diagonal Cascade) */}
+          <h1 className="hero-title w-full select-none text-left">
+            <span className="hero-title__line hero-title__line--one">
+              <span className="hero-title__line-one-text">Your intelligent</span>
+            </span>
+
+            <span className="hero-title__line hero-title__line--two">
+              <span className="hero-title__gradient">medical research</span>
+            </span>
+
+            <span className="hero-title__line hero-title__line--three">
+              <span className="hero-title__line-three-text">assistant</span><span className="hero-title__accent">.</span>
+            </span>
+          </h1>
+
+          {/* Supporting Description & Broad Query Control positioned beneath headline */}
+          <div className="mt-10 sm:mt-14 max-w-3xl space-y-6">
+            <p className="text-base sm:text-lg text-[#6B5F69] leading-relaxed font-sans max-w-2xl">
+              Query 35M+ peer-reviewed citations with an autonomous agent pipeline.
+              Isolate clinical trials, extract statistical effect sizes, and synthesize evidence using GRADE certainty standards.
+            </p>
+
+            {/* Wide, Minimal Research Query Input with Crystal Polish */}
+            <div className="space-y-3.5 pt-1">
+              <div className="crystal-input rounded-xl flex items-center px-4 sm:px-5 py-1.5 gap-3 bg-white max-w-2xl shadow-sm">
+                <Search className="w-4 h-4 text-[#B8AEA3] flex-shrink-0" />
                 <input
                   ref={inputRef}
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  placeholder="e.g. Efficacy of semaglutide in type 2 diabetes meta-analyses"
-                  className="flex-1 h-14 bg-transparent text-slate-800 placeholder:text-slate-400 text-[15px] outline-none"
+                  placeholder="Enter clinical question, therapeutic comparison, or outcome…"
+                  className="flex-1 h-13 bg-transparent text-[#211B20] placeholder:text-[#B8AEA3] text-sm sm:text-[15px] outline-none font-sans"
                 />
                 <button
                   onClick={handleSearch}
                   disabled={!query.trim()}
-                  className="btn-primary flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-sm font-semibold flex-shrink-0"
+                  className="crystal-button flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-heading font-semibold uppercase tracking-wider flex-shrink-0"
                 >
-                  Search
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Synthesize</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#EAAA00]" />
                 </button>
               </div>
 
-              <div className="flex flex-wrap gap-2 justify-center items-center">
-                <span className="text-xs text-slate-400 font-medium">Try:</span>
-                {exampleQueries.map((q, i) => (
-                  <motion.button
-                    key={i}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
+              {/* Compact Suggested Query Outlines */}
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                <span className="text-[11px] font-mono uppercase tracking-wider text-[#B8AEA3] mr-1">
+                  Inquire:
+                </span>
+                {exampleQueries.map((q, idx) => (
+                  <button
+                    key={idx}
                     onClick={() => { setQuery(q); inputRef.current?.focus(); }}
-                    className={`px-3 py-1.5 text-xs text-slate-600 border border-slate-200 bg-white rounded-lg transition-all shadow-sm font-medium ${chipColors[i]}`}
+                    className="text-xs px-3 py-1 rounded border border-[#DDE3E8] bg-[#FAF8F5] text-[#6B5F69] hover:text-[#3A0F34] hover:border-[#3A0F34] hover:bg-white transition-all text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
                   >
                     {q}
-                  </motion.button>
+                  </button>
                 ))}
               </div>
-            </motion.div>
-          </motion.div>
+            </div>
 
-          {/* ── Agentic Preview ──────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.30, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-8"
-          >
-            <AgenticHero />
-          </motion.div>
+          </div>
 
-          {/* ── Stat Cards ───────────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.38 }}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-14"
-          >
-            {stats.map(({ color, icon: Icon, value, label, sub }) => (
-              <motion.div
-                key={label}
-                whileHover={{ y: -4, scale: 1.03 }}
-                transition={{ type: "spring", stiffness: 280, damping: 22 }}
-                className={`stat-card ${statColorMap[color].card} rounded-2xl p-5`}
+        </section>
+
+        {/* ── Section 01: Live Research-Agent Console ────────── */}
+        <section className="w-full max-w-6xl mx-auto mt-16 sm:mt-24">
+          <div className="flex items-center justify-between mb-4 border-b border-[#DDE3E8] pb-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono font-bold text-[#3A0F34] tracking-widest uppercase">
+                [ SECTION 01 — ORCHESTRATION ]
+              </span>
+              <span className="text-xs font-mono text-[#B8AEA3] uppercase">
+                AUTONOMOUS PIPELINE TRACE
+              </span>
+            </div>
+            <span className="text-[11px] font-mono text-[#6B5F69] hidden sm:inline">
+              LANGGRAPH SSE STREAM ENGINE
+            </span>
+          </div>
+
+          <AgenticHero />
+        </section>
+
+        {/* ── 4-Metric Editorial Grid ────────────────────────── */}
+        <section className="w-full max-w-6xl mx-auto mt-20 sm:mt-28">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {stats.map((s, idx) => (
+              <div
+                key={idx}
+                className="crystal-card rounded-2xl p-6 sm:p-7 relative overflow-hidden bg-[#FAF8F5] border border-[#DDE3E8] group"
               >
-                <Icon className={`w-6 h-6 ${statColorMap[color].icon} mb-3`} />
-                <div className={`text-3xl font-black leading-none mb-1 ${statColorMap[color].val}`}>{value}</div>
-                <div className={`text-sm font-semibold leading-tight ${statColorMap[color].label}`}>{label}</div>
-                <div className={`text-xs mt-0.5 ${statColorMap[color].sub}`}>{sub}</div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-
-        {/* ── Feature Cards ─────────────────────────────────── */}
-        <div className="w-full max-w-5xl mx-auto mt-28">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <p className="text-xs font-bold tracking-widest text-indigo-500 uppercase mb-3">Capabilities</p>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
-              Everything You Need for
-              <br />
-              <span className="text-gradient-pro">Clinical Evidence Synthesis</span>
-            </h2>
-            <p className="text-slate-500 mt-4 max-w-xl mx-auto text-base leading-relaxed">
-              A complete AI research pipeline — from raw PubMed search to structured, citable synthesis.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {features.map((f, i) => {
-              const c = colorMap[f.color];
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 22 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.07, duration: 0.5 }}
-                  className={`feat-card ${c.feat} rounded-2xl p-6`}
-                >
-                  <div className={`w-12 h-12 rounded-xl ${c.iconBg} flex items-center justify-center mb-4`}>
-                    <f.icon className={`w-6 h-6 ${c.icon}`} />
-                  </div>
-                  <span className={`inline-block text-[10px] font-bold tracking-wide px-2.5 py-1 rounded-md border ${c.badge} mb-3`}>
-                    {f.badge}
-                  </span>
-                  <h3 className={`text-base font-bold mb-2 ${c.title}`}>{f.title}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed">{f.desc}</p>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── How It Works ──────────────────────────────────── */}
-        <div className="w-full max-w-4xl mx-auto mt-28">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <p className="text-xs font-bold tracking-widest text-violet-500 uppercase mb-3">How It Works</p>
-            <h2 className="text-3xl sm:text-4xl font-black text-slate-900">
-              Research in{" "}
-              <span className="text-gradient-pro">3 Simple Steps</span>
-            </h2>
-            <p className="text-slate-500 mt-4 max-w-xl mx-auto text-base leading-relaxed">
-              No sign-up required. Just type your question and let the AI do the heavy lifting.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {steps.map((s, i) => {
-              const c = colorMap[s.color];
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 22 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.12 }}
-                  className={`${c.stepBg} border rounded-2xl p-7 text-center relative overflow-hidden`}
-                >
-                  <div className={`absolute top-4 right-5 text-7xl font-black ${c.num} leading-none select-none`}>
-                    {s.num}
-                  </div>
-                  <div className={`w-13 h-13 w-12 h-12 rounded-xl ${c.iconBg} flex items-center justify-center mx-auto mb-5 relative z-10`}>
-                    <s.icon className={`w-6 h-6 ${c.icon}`} />
-                  </div>
-                  <h3 className={`text-base font-bold mb-2 relative z-10 ${c.title}`}>{s.title}</h3>
-                  <p className="text-sm text-slate-600 leading-relaxed relative z-10">{s.desc}</p>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* ── CTA Banner ────────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="w-full max-w-4xl mx-auto mt-20"
-        >
-          <div className="cta-gradient rounded-3xl p-12 text-center text-white relative overflow-hidden">
-            <div className="absolute inset-0 pointer-events-none" style={{
-              background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,255,255,0.10) 0%, transparent 60%)"
-            }} />
-            <div className="absolute -bottom-8 -right-8 w-40 h-40 rounded-full bg-white/5" />
-            <div className="absolute -top-6 -left-6 w-32 h-32 rounded-full bg-white/5" />
-            <div className="relative z-10">
-              <div className="w-14 h-14 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center mx-auto mb-5">
-                <Stethoscope className="w-7 h-7 text-white" />
+                <div className="text-3xl sm:text-4xl font-extrabold text-[#3A0F34] tracking-tight mb-2 font-heading">
+                  {s.value}
+                </div>
+                <div className="text-xs font-bold text-[#211B20] tracking-wider uppercase mb-1 font-heading">
+                  {s.label}
+                </div>
+                <div className="text-xs text-[#6B5F69] leading-relaxed">
+                  {s.detail}
+                </div>
+                <div className="absolute bottom-0 left-6 right-6 h-[2px] bg-[#EAAA00] scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300" />
               </div>
-              <h2 className="text-3xl sm:text-4xl font-black mb-3">
-                Ready to Synthesize Evidence?
-              </h2>
-              <p className="text-indigo-100 text-base mb-8 max-w-xl mx-auto leading-relaxed">
-                Join researchers who use our AI to cut literature review time by 10×.
-                Free to use. No sign-up required.
+            ))}
+          </div>
+        </section>
+
+        {/* ── Section 02: Structural Biology & Capabilities ──── */}
+        <section className="w-full max-w-6xl mx-auto mt-24 sm:mt-32">
+          <div className="border-t border-[#DDE3E8] pt-12 mb-12">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4">
+              <div>
+                <p className="text-xs font-mono font-bold tracking-widest text-[#EAAA00] uppercase mb-2">
+                  [ SECTION 02 — CAPABILITIES ]
+                </p>
+                <h2 className="text-clamp-section text-[#211B20]">
+                  <span className="block">Architected for</span>
+                  <span className="section-gradient-gloss">
+                    Evidence Synthesis.
+                  </span>
+                </h2>
+              </div>
+              <p className="text-sm text-[#6B5F69] max-w-md leading-relaxed">
+                Transforming fragmented medical literature into structured PICO matrices with verified citations and GRADE certainty assessment.
               </p>
-              <button
-                onClick={() => navigate("/search")}
-                className="inline-flex items-center gap-2.5 bg-white text-indigo-700 font-bold px-8 py-4 rounded-2xl text-base shadow-xl hover:shadow-2xl transition-all hover:scale-105 hover:-translate-y-0.5"
-              >
-                Start Free Research
-                <ArrowRight className="w-5 h-5" />
-              </button>
             </div>
           </div>
-        </motion.div>
+
+          {/* Cryo-EM Protein Structure Showcase Banner (Below the Fold) */}
+          <div className="crystal-card rounded-2xl p-4 sm:p-6 mb-10 bg-white border border-[#DDE3E8]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              <div className="lg:col-span-7 rounded-xl overflow-hidden aspect-[16/9] border border-[#DDE3E8] bg-[#FAF8F5]">
+                <img
+                  src="/medical-protein-structure.jpg"
+                  alt="High-resolution Cryo-EM structure of kinase protein complex with small molecule inhibitor in marigold"
+                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                />
+              </div>
+
+              <div className="lg:col-span-5 space-y-4 px-2 sm:px-4">
+                <span className="text-[10px] font-mono tracking-widest px-2.5 py-1 rounded bg-[#FAF8F5] border border-[#DDE3E8] text-[#3A0F34] font-semibold uppercase">
+                  FIG. 02 — STRUCTURAL PHARMACOLOGY
+                </span>
+                <h3 className="text-2xl sm:text-3xl text-[#211B20] font-editorial italic font-normal tracking-[-0.025em] leading-snug">
+                  From Literature Text to Molecular & Clinical Endpoints
+                </h3>
+                <p className="text-sm text-[#6B5F69] leading-relaxed">
+                  Instead of reading dozens of disparate 30-page papers, our multi-agent architecture isolates randomized controlled trials, extracts intervention arms and effect sizes, and evaluates risk of bias automatically.
+                </p>
+                <div className="pt-2">
+                  <button
+                    onClick={() => navigate("/search")}
+                    className="crystal-button inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-heading font-semibold uppercase tracking-wider"
+                  >
+                    <span>Launch Research Tool</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-[#EAAA00]" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 6 Capabilities Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {capabilities.map((c, idx) => (
+              <div
+                key={idx}
+                className="crystal-card rounded-2xl p-6 sm:p-7 flex flex-col justify-between hover:border-[#3A0F34] bg-white"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#DDE3E8] pb-3">
+                    <span className="text-[11px] font-mono text-[#EAAA00] font-bold">
+                      {c.num}
+                    </span>
+                    <span className="text-[9px] font-mono tracking-widest text-[#B8AEA3] uppercase">
+                      {c.tag}
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-bold text-[#211B20] font-heading tracking-tight">
+                    {c.title}
+                  </h3>
+
+                  <p className="text-xs text-[#6B5F69] leading-relaxed">
+                    {c.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Section 03: 3-Step Systematic Protocol ─────────── */}
+        <section className="w-full max-w-6xl mx-auto mt-24 sm:mt-32">
+          <div className="border-t border-[#DDE3E8] pt-12 mb-12 text-center">
+            <p className="text-xs font-mono font-bold tracking-widest text-[#3A0F34] uppercase mb-2">
+              [ SECTION 03 — METHODOLOGY ]
+            </p>
+            <h2 className="text-clamp-section text-[#211B20]">
+              <span className="block">Systematic Protocol in</span>
+              <span className="section-gradient-gloss">
+                Three Movements.
+              </span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {steps.map((s, idx) => (
+              <div
+                key={idx}
+                className="crystal-card rounded-2xl p-7 relative border border-[#DDE3E8] bg-[#FAF8F5] space-y-4"
+              >
+                <div className="text-4xl font-mono font-bold text-[#3A0F34] leading-none">
+                  {s.num}.
+                </div>
+                <h3 className="text-base font-bold text-[#211B20] font-heading tracking-tight">
+                  {s.title}
+                </h3>
+                <p className="text-xs text-[#6B5F69] leading-relaxed">
+                  {s.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Closing Callout: Deep Aubergine Canvas ─────────── */}
+        <section className="w-full max-w-6xl mx-auto mt-24 sm:mt-32">
+          <div className="editorial-aubergine-surface rounded-3xl p-8 sm:p-14 text-center relative overflow-hidden border border-[#240720] shadow-2xl">
+            <div className="relative z-10 max-w-2xl mx-auto space-y-6">
+              <span className="inline-block text-[10px] font-mono tracking-widest px-3 py-1 rounded bg-[#FAF8F5]/10 border border-[#FAF8F5]/20 text-[#FAF8F5] uppercase">
+                CLINICAL LITERATURE DISCOVERY
+              </span>
+
+              <h2 className="editorial-cta-headline text-3xl sm:text-5xl lg:text-6xl text-[#FAF8F5]">
+                <span className="block">Synthesize literature with</span>
+                <span className="editorial-cta-gradient block mt-1.5">
+                  journal-ready certainty.
+                </span>
+              </h2>
+
+              <p className="text-sm sm:text-base text-[#DDE3E8] leading-relaxed max-w-xl mx-auto">
+                No subscription required. Query live PubMed Central databases with automated GRADE assessment and exportable clinical matrices.
+              </p>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => navigate("/search")}
+                  className="btn-editorial-marigold inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl text-xs font-heading font-bold uppercase tracking-wider"
+                >
+                  <span>Begin Clinical Query</span>
+                  <ArrowRight className="w-4 h-4 text-[#211B20]" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </main>
 
       <Footer />
-    </motion.div>
+    </div>
   );
 };
 

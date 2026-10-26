@@ -2,12 +2,19 @@
 # Initializes the API server that the React frontend communicates with.
 import os
 import sys
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
+
+# Ensure UTF-8 output encoding across platforms, particularly on Windows consoles
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 # Ensure the src directory is in the path so imports work correctly
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
 from api.routers.research_router import router as research_router
 

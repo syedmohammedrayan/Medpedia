@@ -47,14 +47,50 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        aubergine: {
+          DEFAULT: "#3A0F34",
+          deep: "#240720",
+          light: "#541B4B",
+          surface: "#F5EEF4",
+          border: "#541B4B33",
+        },
+        marigold: {
+          DEFAULT: "#EAAA00",
+          light: "#F7BE28",
+          dark: "#C58E00",
+          soft: "#FDF7E7",
+        },
+        silver: {
+          DEFAULT: "#DDE3E8",
+          light: "#EFF3F6",
+          dark: "#B8C5CE",
+        },
+        ivory: {
+          DEFAULT: "#F4F0E8",
+          light: "#FAF8F5",
+          dark: "#E8E2D5",
+        },
+        ink: {
+          DEFAULT: "#211B20",
+          soft: "#3B333A",
+          muted: "#6B5F69",
+        },
+        editorial: {
+          stone: "#B8AEA3",
+          border: "#DDE3E8",
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['IBM Plex Mono', 'monospace'],
+        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        heading: ['"Sora"', 'sans-serif'],
+        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        editorial: ['"Instrument Serif"', '"Cormorant Garamond"', 'Georgia', 'serif'],
+        mono: ['"IBM Plex Mono"', 'monospace'],
       },
       backgroundImage: {
         'gradient-hero': 'var(--gradient-hero)',
         'gradient-card': 'var(--gradient-card)',
+        'aubergine-radial': 'radial-gradient(circle at 50% 0%, #4D1645 0%, #3A0F34 60%, #240720 100%)',
       },
       borderRadius: {
         lg: "var(--radius)",

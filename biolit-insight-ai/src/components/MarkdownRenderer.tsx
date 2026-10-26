@@ -11,12 +11,17 @@ const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
   const renderInline = (text: string): ReactNode[] =>
     text.split(/(\*\*.*?\*\*|\[.*?\]\(.*?\))/g).map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**"))
-        return <strong key={i} className="font-semibold text-slate-800">{part.slice(2, -2)}</strong>;
+        return <strong key={i} className="font-bold text-[#211B20] font-heading">{part.slice(2, -2)}</strong>;
       const link = part.match(/^\[(.*?)\]\((.*?)\)$/);
       if (link)
         return (
-          <a key={i} href={link[2]} target="_blank" rel="noopener noreferrer"
-            className="text-indigo-600 hover:text-indigo-700 underline underline-offset-2 transition-colors">
+          <a
+            key={i}
+            href={link[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#3A0F34] font-semibold underline decoration-[#EAAA00] decoration-2 underline-offset-2 hover:text-[#EAAA00] transition-colors"
+          >
             {link[1]}
           </a>
         );
@@ -24,13 +29,13 @@ const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
     });
 
   const renderTable = (header: string[], rows: string[][], key: string) => (
-    <div key={key} className="my-4 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+    <div key={key} className="my-4 bg-white border border-[#DDE3E8] rounded-xl overflow-hidden shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-xs">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50">
+            <tr className="border-b border-[#DDE3E8] bg-[#FAF8F5]">
               {header.map((h, i) => (
-                <th key={i} className="px-4 py-2.5 text-left font-bold tracking-widest text-slate-500 uppercase whitespace-nowrap">
+                <th key={i} className="px-4 py-2.5 text-left font-mono font-bold tracking-wider text-[#3A0F34] uppercase whitespace-nowrap">
                   {h}
                 </th>
               ))}
@@ -38,9 +43,9 @@ const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
           </thead>
           <tbody>
             {rows.map((row, ri) => (
-              <tr key={ri} className="border-b border-slate-100 hover:bg-indigo-50/40 transition-colors last:border-0">
+              <tr key={ri} className="border-b border-[#DDE3E8] hover:bg-[#FAF8F5]/80 transition-colors last:border-0">
                 {row.map((cell, ci) => (
-                  <td key={ci} className="px-4 py-2.5 text-slate-600 leading-relaxed align-top">
+                  <td key={ci} className="px-4 py-2.5 text-[#3B333A] leading-relaxed align-top">
                     {renderInline(cell)}
                   </td>
                 ))}
@@ -81,14 +86,13 @@ const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
     const hl = highlights.find((s) => trimmed.startsWith(s));
     if (hl) {
       elements.push(
-        <div key={i} className="flex items-center gap-2 mt-6 mb-3">
-          <div className="w-6 h-6 rounded-md border border-indigo-200 bg-indigo-50 flex items-center justify-center flex-shrink-0">
-            {hl === "Key Findings" && <Sparkles className="w-3 h-3 text-indigo-600" />}
-            {hl === "Consistent Results" && <CheckCircle2 className="w-3 h-3 text-indigo-600" />}
-            {(hl === "Discrepancies" || hl === "Evidence Gaps") && <AlertTriangle className="w-3 h-3 text-violet-600" />}
+        <div key={i} className="flex items-center gap-2 mt-6 mb-3 border-b border-[#DDE3E8] pb-1.5">
+          <div className="w-6 h-6 rounded-md bg-[#3A0F34] flex items-center justify-center flex-shrink-0">
+            {hl === "Key Findings" && <Sparkles className="w-3.5 h-3.5 text-[#EAAA00]" />}
+            {hl === "Consistent Results" && <CheckCircle2 className="w-3.5 h-3.5 text-[#EAAA00]" />}
+            {(hl === "Discrepancies" || hl === "Evidence Gaps") && <AlertTriangle className="w-3.5 h-3.5 text-[#EAAA00]" />}
           </div>
-          <h3 className="text-[11px] font-bold tracking-widest text-slate-500 uppercase">{hl}</h3>
-          <div className="flex-1 h-px bg-slate-200" />
+          <h3 className="text-xs font-mono font-bold tracking-widest text-[#3A0F34] uppercase">{hl}</h3>
         </div>
       );
       i++; continue;
@@ -97,36 +101,36 @@ const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
     // Standard markdown
     if (trimmed.startsWith("> ")) {
       elements.push(
-        <div key={i} className="my-3 border-l-2 border-violet-400 bg-violet-50 pl-4 py-2 rounded-r-lg">
-          <p className="text-sm text-slate-600">{renderInline(trimmed.replace("> ", ""))}</p>
+        <div key={i} className="my-3 border-l-4 border-[#EAAA00] bg-[#FDF6E4] pl-4 py-2.5 rounded-r-lg border border-[#DDE3E8] border-l-4">
+          <p className="text-xs sm:text-sm text-[#3B333A] leading-relaxed">{renderInline(trimmed.replace("> ", ""))}</p>
         </div>
       );
     } else if (line.startsWith("### ")) {
       elements.push(
-        <h3 key={i} className="text-sm font-semibold text-slate-700 mt-5 mb-2">
+        <h3 key={i} className="text-sm font-bold text-[#3A0F34] font-heading mt-5 mb-2">
           {renderInline(line.replace("### ", ""))}
         </h3>
       );
     } else if (line.startsWith("## ")) {
       elements.push(
-        <h2 key={i} className="text-base font-bold text-slate-800 mt-6 mb-3 pb-2 border-b border-slate-200">
+        <h2 key={i} className="text-base font-bold text-[#211B20] font-heading mt-6 mb-3 pb-1.5 border-b border-[#DDE3E8]">
           {renderInline(line.replace("## ", ""))}
         </h2>
       );
     } else if (trimmed.startsWith("- ")) {
       elements.push(
-        <div key={i} className="flex gap-2.5 my-1.5">
-          <span className="mt-2 w-1 h-1 rounded-full bg-indigo-400 flex-shrink-0" />
-          <div className="text-sm text-slate-600 leading-relaxed">
+        <div key={i} className="flex gap-2.5 my-2">
+          <span className="mt-2 w-1.5 h-1.5 rounded-full bg-[#EAAA00] flex-shrink-0" />
+          <div className="text-xs sm:text-sm text-[#3B333A] leading-relaxed">
             {renderInline(trimmed.replace("- ", ""))}
           </div>
         </div>
       );
     } else if (trimmed === "---") {
-      elements.push(<hr key={i} className="my-5 border-slate-200" />);
+      elements.push(<hr key={i} className="my-5 border-[#DDE3E8]" />);
     } else if (trimmed) {
       elements.push(
-        <p key={i} className="text-sm text-slate-600 leading-relaxed mt-2">
+        <p key={i} className="text-xs sm:text-sm text-[#3B333A] leading-relaxed mt-2.5">
           {renderInline(line)}
         </p>
       );

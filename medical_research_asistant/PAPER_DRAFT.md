@@ -1,17 +1,8 @@
-# MedGraph: An Agentic LLM Pipeline for Automated Biomedical Evidence Synthesis from PubMed Literature
 
----
-
-**[SUPERVISOR NAME]¹ and [YOUR NAME]¹**
-
-¹Department of Computer Science, [UNIVERSITY NAME], [CITY], Pakistan
-Email: [supervisor@email.com], [your@email.com]
-
----
 
 ## Abstract
 
-The exponential growth of biomedical literature presents a critical bottleneck for clinicians and researchers who must synthesize evidence from thousands of publications to make informed decisions. Manual literature review is time-intensive, often requiring two to three hours per clinical query. This paper presents **MedGraph**, an end-to-end agentic pipeline that automates biomedical evidence retrieval, synthesis, and dissemination using Large Language Models (LLMs) orchestrated through the LangGraph framework. MedGraph employs a four-node sequential graph comprising a ReAct-based query ingestor, a direct LLM evidence builder, a human-in-the-loop email collector, and an automated email dispatcher. The system integrates with NCBI PubMed via E-utilities APIs and leverages Google Gemini 2.5 Flash for evidence classification. Evaluation across five diverse medical domains demonstrated consistent retrieval of ten articles per query in an average of 44.6 seconds, with an evidence distribution of 24% Strong, 26% Moderate, and 50% Preliminary studies. The system successfully delivered structured HTML evidence reports via email in all five test cases. Two key limitations — duplicate article retrieval and query scope drift — were identified and are discussed as directions for future improvement. MedGraph demonstrates that agentic LLM workflows can meaningfully reduce the time burden of biomedical literature review while preserving evidence quality classification.
+The exponential growth of biomedical literature presents a critical bottleneck for clinicians and researchers who must synthesize evidence from thousands of publications to make informed decisions. Manual literature review is time-intensive, often requiring two to three hours per clinical query. This paper presents **MedGraph**, an end-to-end agentic pipeline that automates biomedical evidence retrieval, synthesis, and dissemination using Large Language Models (LLMs) orchestrated through the LangGraph framework. MedGraph employs a four-node sequential graph comprising a ReAct-based query ingestor, a direct LLM evidence builder, a human-in-the-loop email collector, and an automated email dispatcher. The system integrates with NCBI PubMed via E-utilities APIs and leverages Google Gemini 3.5 Flash Lite for evidence classification. Evaluation across five diverse medical domains demonstrated consistent retrieval of ten articles per query in an average of 44.6 seconds, with an evidence distribution of 24% Strong, 26% Moderate, and 50% Preliminary studies. The system successfully delivered structured HTML evidence reports via email in all five test cases. Two key limitations — duplicate article retrieval and query scope drift — were identified and are discussed as directions for future improvement. MedGraph demonstrates that agentic LLM workflows can meaningfully reduce the time burden of biomedical literature review while preserving evidence quality classification.
 
 **Keywords:** Large Language Models, LangGraph, PubMed, Evidence Synthesis, ReAct Agent, Biomedical NLP, Human-in-the-Loop, Medical AI
 
@@ -114,12 +105,12 @@ MedGraph is built on LangGraph, a graph-based orchestration framework for statef
   │                    [MemorySaver Checkpointer]                          │
   └────────────────────────────────────────────────────────────────────────┘
 
-Figure 1: MedGraph System Architecture
+Figure 1: Medpedia System Architecture
 ```
 
 ### B. Node 1 — Medical Query Ingestor (ReAct Agent)
 
-The query ingestor implements the ReAct (Reasoning + Acting) pattern [10], enabling the agent to reason about the query before invoking retrieval tools. The node is instantiated as a `create_react_agent` with Google Gemini 2.5 Flash as the backbone LLM and a single tool: `pubmed_to_pmc_full_text_search`.
+The query ingestor implements the ReAct (Reasoning + Acting) pattern [10], enabling the agent to reason about the query before invoking retrieval tools. The node is instantiated as a `create_react_agent` with Google Gemini 3.5 Flash Lite as the backbone LLM and a single tool: `pubmed_to_pmc_full_text_search`.
 
 Upon receiving a free-text clinical question, the agent:
 1. Identifies the core medical topic and entities.
@@ -192,7 +183,7 @@ Thread-level persistence is managed by `MemorySaver`, enabling state recovery af
 | Component | Technology |
 |---|---|
 | Agent Orchestration | LangGraph 1.0+ |
-| LLM | Google Gemini 2.5 Flash (via OpenRouter) |
+| LLM | Google Gemini 3.5 Flash Lite (via Google Gemini API) |
 | Literature Retrieval | NCBI E-utilities REST API |
 | Web Framework | FastAPI + Uvicorn |
 | Streaming | Server-Sent Events (astream_events v2) |

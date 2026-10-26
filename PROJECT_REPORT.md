@@ -138,7 +138,7 @@ npm install
 npm run dev
 ```
 
-Required configuration includes `OPENROUTER_API_KEY`; SMTP and optional LangSmith settings are described in [`medical_research_asistant/.env.example`](medical_research_asistant/.env.example).
+Required configuration includes `GEMINI_API_KEY`; SMTP and optional LangSmith settings are described in [`medical_research_asistant/.env.example`](medical_research_asistant/.env.example).
 
 ## Current Scope and Production Roadmap
 

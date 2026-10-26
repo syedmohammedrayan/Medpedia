@@ -14,7 +14,7 @@ Biomedical literature is large, fast-moving, and difficult to review under time 
 
 - Natural-language clinical research questions
 - PubMed retrieval through NCBI E-utilities (`esearch`, `esummary`, and `efetch`)
-- Agentic query expansion with Gemini 2.5 Flash through OpenRouter
+- Agentic query expansion with Gemini 3.5 Flash Lite through the Google Gemini API
 - Structured evidence cards, study-type classification, and narrative synthesis
 - Real-time Server-Sent Events for pipeline progress and streamed responses
 - Human-in-the-loop email collection using LangGraph `interrupt()` and resumable threads
@@ -65,7 +65,7 @@ Medpedia/
 | Frontend | React, TypeScript, Vite, Tailwind CSS, Radix UI, Framer Motion |
 | Backend | Python, FastAPI, Uvicorn, Pydantic |
 | AI orchestration | LangGraph, LangChain, ReAct agents |
-| Model provider | Google Gemini 2.5 Flash through OpenRouter |
+| Model provider | Google Gemini 3.5 Flash Lite via Google Gemini API |
 | Literature source | NCBI PubMed E-utilities |
 | Streaming | Server-Sent Events and Fetch Streams API |
 | Delivery | SMTP with TLS/STARTTLS |
@@ -94,7 +94,7 @@ Open the Vite URL shown in the terminal. The current frontend expects the API at
 
 ### Environment
 
-The backend requires an OpenRouter key. NCBI and SMTP settings are also needed for literature retrieval and email delivery. See [`medical_research_asistant/.env.example`](medical_research_asistant/.env.example).
+The backend requires a Gemini API key (`GEMINI_API_KEY`). NCBI and SMTP settings are also needed for literature retrieval and email delivery. See [`medical_research_asistant/.env.example`](medical_research_asistant/.env.example).
 
 ## Validation
 

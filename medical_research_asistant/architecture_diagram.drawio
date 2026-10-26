@@ -52,12 +52,12 @@
     </mxCell>
 
     <!-- NODE 1 -->
-    <mxCell id="n1" value="&lt;b&gt;①  med_query_ingestor&lt;/b&gt;&lt;hr/&gt;🤖 ReAct Agent&lt;br/&gt;Gemini 2.5 Flash (OpenRouter)&lt;br/&gt;Tool: pubmed_to_pmc_full_text_search" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1B5E20;strokeColor=#2E7D32;fontColor=#FFFFFF;fontSize=11;shadow=1;verticalAlign=middle;" vertex="1" parent="1">
+    <mxCell id="n1" value="&lt;b&gt;①  med_query_ingestor&lt;/b&gt;&lt;hr/&gt;🤖 ReAct Agent&lt;br/&gt;Gemini 3.5 Flash Lite (Google Gemini API)&lt;br/&gt;Tool: pubmed_to_pmc_full_text_search" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1B5E20;strokeColor=#2E7D32;fontColor=#FFFFFF;fontSize=11;shadow=1;verticalAlign=middle;" vertex="1" parent="1">
       <mxGeometry x="68" y="383" width="285" height="135" as="geometry" />
     </mxCell>
 
     <!-- NODE 2 -->
-    <mxCell id="n2" value="&lt;b&gt;②  med_evidence_builder&lt;/b&gt;&lt;hr/&gt;🧠 Direct LLM Call&lt;br/&gt;Gemini 2.5 Flash (no tool loop)&lt;br/&gt;10 Study Types · 🟢 🟡 🔴" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E65100;strokeColor=#BF360C;fontColor=#FFFFFF;fontSize=11;shadow=1;verticalAlign=middle;" vertex="1" parent="1">
+    <mxCell id="n2" value="&lt;b&gt;②  med_evidence_builder&lt;/b&gt;&lt;hr/&gt;🧠 Direct LLM Call&lt;br/&gt;Gemini 3.5 Flash Lite (no tool loop)&lt;br/&gt;10 Study Types · 🟢 🟡 🔴" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E65100;strokeColor=#BF360C;fontColor=#FFFFFF;fontSize=11;shadow=1;verticalAlign=middle;" vertex="1" parent="1">
       <mxGeometry x="393" y="383" width="285" height="135" as="geometry" />
     </mxCell>
 

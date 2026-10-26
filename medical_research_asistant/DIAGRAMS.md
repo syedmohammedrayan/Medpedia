@@ -40,13 +40,13 @@ graph TB
     subgraph LG["  🔄  LangGraph Agentic Pipeline  —  src/agent/graph.py  "]
 
         subgraph N1["  Node ①  med_query_ingestor  "]
-            RA["🤖  ReAct Agent\nGemini 2.5 Flash\n(OpenRouter)"]
+            RA["🤖  ReAct Agent\nGemini 3.5 Flash Lite\n(Google Gemini API)"]
             PT["🔧  pubmed_to_pmc_\nfull_text_search\ntool"]
             RA <-->|"Tool\nInvocation"| PT
         end
 
         subgraph N2["  Node ②  med_evidence_builder  "]
-            DL["🧠  Direct LLM Call\nGemini 2.5 Flash\n(no tool loop)"]
+            DL["🧠  Direct LLM Call\nGemini 3.5 Flash Lite\n(no tool loop)"]
             EC["📊  Evidence Classifier\n────────────────\n10 Study Type Categories\n🟢 Strong · 🟡 Moderate\n🔴 Preliminary"]
             DL --> EC
         end
@@ -147,7 +147,7 @@ flowchart LR
 
     S(["▶ START\nUser Query"])
 
-    subgraph N1["① med_query_ingestor\n🤖 ReAct Agent · Gemini 2.5 Flash"]
+    subgraph N1["① med_query_ingestor\n🤖 ReAct Agent · Gemini 3.5 Flash Lite"]
         direction TB
         A["🔍 Parse clinical query\n+ identify entities"]
         B["📚 Expand with\nMeSH terminology"]
@@ -156,7 +156,7 @@ flowchart LR
         A --> B --> C --> D
     end
 
-    subgraph N2["② med_evidence_builder\n🧠 Direct LLM · Gemini 2.5 Flash"]
+    subgraph N2["② med_evidence_builder\n🧠 Direct LLM · Gemini 3.5 Flash Lite"]
         direction TB
         E["📥 Receive articles_report"]
         F["🔬 Classify study type\n10 categories"]
@@ -350,7 +350,7 @@ graph TD
 
     ART(["📄 Retrieved PubMed Article"])
 
-    ART --> CLF{"🧠 LLM Evidence\nClassifier\nGemini 2.5 Flash"}
+    ART --> CLF{"🧠 LLM Evidence\nClassifier\nGemini 3.5 Flash Lite"}
 
     CLF --> T1["📚 Systematic Review\n/ Meta-Analysis"]
     CLF --> T2["💊 Randomized\nControlled Trial"]
@@ -409,10 +409,9 @@ graph LR
 
     subgraph CORE["Core AI / Orchestration"]
         LG["LangGraph 1.0+\nGraph Orchestration"]
-        LC["LangChain Core\nTool + Message API"]
-        OR["OpenRouter\nAPI Gateway"]
-        GM["Google Gemini\n2.5 Flash\nLLM Backend"]
-        LG --> LC --> OR --> GM
+        LC["LangChain Google GenAI\nlangchain-google-genai"]
+        GM["Google Gemini\n3.5 Flash Lite\nLLM Backend"]
+        LG --> LC --> GM
     end
 
     subgraph DATA["Data Layer"]

@@ -122,7 +122,7 @@ def pubmed_to_pmc_full_text_search(query: str, max_results: int = 10) -> str:
     """
     api_key = _get_api_key()
     t_total = time.time()
-    print(f"\n[TIMING] pubmed_tool → started | query: {query[:80]}")
+    print(f"\n[TIMING] pubmed_tool -> started | query: {query[:80]}")
 
     # ── Step 1: Search PubMed for IDs ──────────────────────────────────────
     # Finds the article IDs matching the query, sorted by most recent.
@@ -143,7 +143,7 @@ def pubmed_to_pmc_full_text_search(query: str, max_results: int = 10) -> str:
         )
         search_resp.raise_for_status()
         pmids = search_resp.json().get("esearchresult", {}).get("idlist", [])
-        print(f"[TIMING] pubmed_tool step1 esearch → {time.time()-t:.2f}s | {len(pmids)} PMIDs")
+        print(f"[TIMING] pubmed_tool step1 esearch -> {time.time()-t:.2f}s | {len(pmids)} PMIDs")
 
         if not pmids:
             return json.dumps({
@@ -167,7 +167,7 @@ def pubmed_to_pmc_full_text_search(query: str, max_results: int = 10) -> str:
         )
         summary_resp.raise_for_status()
         articles_data = summary_resp.json().get("result", {})
-        print(f"[TIMING] pubmed_tool step2 esummary → {time.time()-t:.2f}s")
+        print(f"[TIMING] pubmed_tool step2 esummary -> {time.time()-t:.2f}s")
 
         # ── Step 3: Fetch abstracts via efetch XML ─────────────────────────
         # Retrieves the actual abstract text for the found IDs.
@@ -197,7 +197,7 @@ def pubmed_to_pmc_full_text_search(query: str, max_results: int = 10) -> str:
                     for p in abstract_parts
                 ).strip()
                 abstracts[pmid_elem.text] = full_abstract
-        print(f"[TIMING] pubmed_tool step3 efetch abstracts → {time.time()-t:.2f}s")
+        print(f"[TIMING] pubmed_tool step3 efetch abstracts -> {time.time()-t:.2f}s")
 
         # ── Step 4: Assemble results (abstracts only — PMC full text skipped) ──
         results = []
@@ -217,7 +217,7 @@ def pubmed_to_pmc_full_text_search(query: str, max_results: int = 10) -> str:
             })
 
         output = json.dumps(results, ensure_ascii=False)
-        print(f"[TIMING] pubmed_tool → TOTAL {time.time()-t_total:.2f}s | output size: {len(output)} chars")
+        print(f"[TIMING] pubmed_tool -> TOTAL {time.time()-t_total:.2f}s | output size: {len(output)} chars")
         return output
 
     except requests.exceptions.RequestException as e:

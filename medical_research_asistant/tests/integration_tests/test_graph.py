@@ -7,6 +7,7 @@ pytestmark = pytest.mark.anyio
 
 @pytest.mark.langsmith
 async def test_agent_simple_passthrough() -> None:
-    inputs = {"changeme": "some_val"}
-    res = await graph.ainvoke(inputs)
+    inputs = {"messages": [{"role": "user", "content": "hi"}]}
+    config = {"configurable": {"thread_id": "test_thread_123"}}
+    res = await graph.ainvoke(inputs, config=config)
     assert res is not None
