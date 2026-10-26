@@ -88,9 +88,15 @@ med_query_react_agent = create_react_agent(
 
 async def med_query_ingestor_node(state: MedResearchState) -> Dict[str, Any]:
     """Runs the ingestor and returns a clean text summary for LangSmith."""
+    messages = state.get("messages", [])
+    if not messages:
+        return {
+            "messages": [AIMessage(content="No clinical inquiry was provided.")],
+            "articles_report": "No articles retrieved.",
+        }
     t0 = time.time()
     print(f"\n[TIMING] med_query_ingestor -> started")
-    result = await med_query_react_agent.ainvoke({"messages": state["messages"]})
+    result = await med_query_react_agent.ainvoke({"messages": messages})
     last_msg_content = extract_text(result["messages"][-1].content)
     print(f"[TIMING] med_query_ingestor -> done in {time.time() - t0:.2f}s | output chars: {len(last_msg_content)}")
     return {

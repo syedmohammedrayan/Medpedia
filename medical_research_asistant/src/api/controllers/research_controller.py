@@ -75,6 +75,13 @@ class ResearchController:
         config = {"configurable": {"thread_id": thread_id}}
 
         try:
+            # Verify that the thread actually exists and is currently paused at an interrupt
+            state = await graph.aget_state(config)
+            if not state.values or not state.next:
+                yield f"data: {json.dumps({'type': 'error', 'content': 'Session expired or server restarted while waiting for email. Please submit your research inquiry again.'})}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+
             # Passes the provided email back into the graph via Command(resume=...).
             async for event in graph.astream_events(Command(resume=email), config=config, version="v2"):
                 kind = event["event"]
