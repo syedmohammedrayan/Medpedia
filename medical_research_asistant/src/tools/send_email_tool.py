@@ -13,6 +13,8 @@ styled HTML email. No CSV attachment is needed.
 import os
 import re
 import smtplib
+import socket
+import ssl
 from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -238,8 +240,20 @@ def send_email(
 
     # Send via SMTP
     try:
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
+        # Force IPv4 resolution to prevent [Errno 101] Network is unreachable on cloud environments like Render
+        connect_host = smtp_host
+        try:
+            ipv4_info = socket.getaddrinfo(smtp_host, None, socket.AF_INET)
+            if ipv4_info:
+                connect_host = ipv4_info[0][4][0]
+        except Exception:
+            connect_host = smtp_host
+
+        with smtplib.SMTP(connect_host, smtp_port, timeout=25) as server:
+            server.ehlo()
+            server._host = smtp_host  # Preserves SNI hostname validation for TLS
             server.starttls()
+            server.ehlo()
             server.login(smtp_user, smtp_password)
             server.send_message(msg)
         return "Email sent successfully."

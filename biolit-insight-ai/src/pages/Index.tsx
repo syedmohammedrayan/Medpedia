@@ -106,7 +106,7 @@ const Index = () => {
           {/* Staggered 3-Line Display Headline ("One After Another" Diagonal Cascade) */}
           <h1 className="hero-title w-full select-none text-left">
             <span className="hero-title__line hero-title__line--one whitespace-nowrap">
-              <span className="invisible select-none pointer-events-none hidden sm:inline" aria-hidden="true">tell</span><span className="hero-title__line-one-text">Your intelligent</span>
+              <span className="invisible select-none pointer-events-none hidden sm:inline" aria-hidden="true">intell</span><span className="hero-title__line-one-text">Your intelligent</span>
             </span>
 
             <span className="hero-title__line hero-title__line--two whitespace-nowrap">
