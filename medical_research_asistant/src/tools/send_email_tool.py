@@ -126,8 +126,11 @@ def send_email(
     smtp_host     = os.getenv("SMTP_HOST", "smtp.gmail.com")
     smtp_port     = int(os.getenv("SMTP_PORT", 587))
 
-    if not smtp_user or not smtp_password:
-        return "Error: SMTP_USER and SMTP_PASSWORD must be set in environment variables."
+    resend_api_key = os.getenv("RESEND_API_KEY")
+    brevo_api_key  = os.getenv("BREVO_API_KEY")
+
+    if not resend_api_key and not brevo_api_key and (not smtp_user or not smtp_password):
+        return "Error: SMTP_USER and SMTP_PASSWORD (or RESEND_API_KEY) must be set in environment variables."
 
     # Build message headers
     now = datetime.now(timezone.utc).strftime("%B %d, %Y")
@@ -238,9 +241,62 @@ def send_email(
     """
     msg.attach(MIMEText(html_body, "html"))
 
-    # Send via SMTP
+    # 1. First priority: HTTP REST API via Resend (HTTPS Port 443 — NEVER blocked by Render Free Tier)
+    if resend_api_key:
+        try:
+            import httpx
+            from_sender = os.getenv("RESEND_FROM") or "Medpedia <onboarding@resend.dev>"
+            resp = httpx.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {resend_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": from_sender,
+                    "to": [recipient_email],
+                    "subject": f"🔬 Medical Research Insights – {now}",
+                    "html": html_body,
+                },
+                timeout=15.0,
+            )
+            if resp.status_code in (200, 201):
+                return "Email sent successfully."
+            else:
+                return f"Error from Resend API ({resp.status_code}): {resp.text}"
+        except Exception as api_err:
+            return f"Error sending via Resend: {api_err}"
+
+    # 2. Second priority: HTTP REST API via Brevo (HTTPS Port 443)
+    if brevo_api_key:
+        try:
+            import httpx
+            sender_email = smtp_user or "noreply@medpedia.app"
+            resp = httpx.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key": brevo_api_key,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "sender": {"name": "Medpedia", "email": sender_email},
+                    "to": [{"email": recipient_email}],
+                    "subject": f"🔬 Medical Research Insights – {now}",
+                    "htmlContent": html_body,
+                },
+                timeout=15.0,
+            )
+            if resp.status_code in (200, 201):
+                return "Email sent successfully."
+            else:
+                return f"Error from Brevo API ({resp.status_code}): {resp.text}"
+        except Exception as api_err:
+            return f"Error sending via Brevo: {api_err}"
+
+    # 3. Third priority: Direct SMTP (Port 587 / 465)
+    # Render Free Tier blocks outbound TCP to ports 25, 465, and 587.
+    # On Render Free Tier, set RESEND_API_KEY to send via port 443 instead.
     try:
-        # Force IPv4 resolution to prevent [Errno 101] Network is unreachable on cloud environments like Render
         connect_host = smtp_host
         try:
             ipv4_info = socket.getaddrinfo(smtp_host, None, socket.AF_INET)
@@ -249,7 +305,7 @@ def send_email(
         except Exception:
             connect_host = smtp_host
 
-        with smtplib.SMTP(connect_host, smtp_port, timeout=25) as server:
+        with smtplib.SMTP(connect_host, smtp_port, timeout=8) as server:
             server.ehlo()
             server._host = smtp_host  # Preserves SNI hostname validation for TLS
             server.starttls()
@@ -257,5 +313,10 @@ def send_email(
             server.login(smtp_user, smtp_password)
             server.send_message(msg)
         return "Email sent successfully."
+    except (socket.timeout, TimeoutError):
+        return (
+            "Error: Connection timed out. Render Free Tier blocks outbound SMTP traffic on ports 587/465. "
+            "To send emails from Render, add a free RESEND_API_KEY to your Render environment variables."
+        )
     except Exception as exc:
         return f"Error: {exc}"
