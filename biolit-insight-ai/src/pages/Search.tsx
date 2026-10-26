@@ -247,11 +247,11 @@ const Search = () => {
                       <button
                         key={i}
                         onClick={() => handleExampleClick(q)}
-                        className="card-ice-silver rounded-xl p-3.5 text-left group flex flex-col justify-between"
+                        className="bg-white border border-[#DDE3E8] hover:border-[#3A0F34] rounded-xl p-3.5 text-left group flex flex-col justify-between shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
                       >
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#FAF8F5]/90 text-[#3A0F34] border border-[rgba(58,15,52,0.16)] font-semibold uppercase">
+                            <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#FAF8F5] text-[#3A0F34] border border-[#DDE3E8] font-semibold uppercase">
                               {meta.tagLabel}
                             </span>
                             <ChevronRight className="w-3.5 h-3.5 text-[#3A0F34]/60 group-hover:text-[#EAAA00] group-hover:translate-x-0.5 transition-all" />
