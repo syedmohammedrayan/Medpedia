@@ -105,29 +105,29 @@ const Index = () => {
 
           {/* Staggered 3-Line Display Headline ("One After Another" Diagonal Cascade) */}
           <h1 className="hero-title w-full select-none text-left">
-            <span className="hero-title__line hero-title__line--one">
+            <span className="hero-title__line hero-title__line--one whitespace-nowrap">
               <span className="hero-title__line-one-text">Your intelligent</span>
             </span>
 
-            <span className="hero-title__line hero-title__line--two">
-              <span className="hero-title__gradient">medical research</span>
+            <span className="hero-title__line hero-title__line--two whitespace-nowrap">
+              <span className="invisible select-none pointer-events-none hidden sm:inline" aria-hidden="true">Your intell</span><span className="hero-title__gradient">medical research</span>
             </span>
 
-            <span className="hero-title__line hero-title__line--three">
-              <span className="hero-title__line-three-text">assistant</span><span className="hero-title__accent">.</span>
+            <span className="hero-title__line hero-title__line--three whitespace-nowrap">
+              <span className="invisible select-none pointer-events-none hidden sm:inline" aria-hidden="true">Your intell</span><span className="invisible select-none pointer-events-none hidden sm:inline" aria-hidden="true">medical res</span><span className="hero-title__line-three-text">assistant</span><span className="hero-title__accent">.</span>
             </span>
           </h1>
 
           {/* Supporting Description & Broad Query Control positioned beneath headline */}
-          <div className="mt-10 sm:mt-14 max-w-3xl space-y-6">
-            <p className="text-base sm:text-lg text-[#6B5F69] leading-relaxed font-sans max-w-2xl">
+          <div className="mt-10 sm:mt-14 max-w-3xl mx-auto flex flex-col items-center text-center space-y-6">
+            <p className="text-base sm:text-lg text-[#6B5F69] leading-relaxed font-sans max-w-2xl mx-auto text-center">
               Query 35M+ peer-reviewed citations with an autonomous agent pipeline.
               Isolate clinical trials, extract statistical effect sizes, and synthesize evidence using GRADE certainty standards.
             </p>
 
             {/* Wide, Minimal Research Query Input with Crystal Polish */}
-            <div className="space-y-3.5 pt-1">
-              <div className="crystal-input rounded-xl flex items-center px-4 sm:px-5 py-1.5 gap-3 bg-white max-w-2xl shadow-sm">
+            <div className="space-y-3.5 pt-1 w-full flex flex-col items-center">
+              <div className="crystal-input rounded-xl flex items-center px-4 sm:px-5 py-1.5 gap-3 bg-white w-full max-w-2xl shadow-sm mx-auto">
                 <Search className="w-4 h-4 text-[#B8AEA3] flex-shrink-0" />
                 <input
                   ref={inputRef}
@@ -148,7 +148,7 @@ const Index = () => {
               </div>
 
               {/* Compact Suggested Query Outlines */}
-              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-0.5 mx-auto">
                 <span className="text-[11px] font-mono uppercase tracking-wider text-[#B8AEA3] mr-1">
                   Inquire:
                 </span>
@@ -329,22 +329,22 @@ const Index = () => {
           </div>
         </section>
 
-        {/* ── Closing Callout: Deep Aubergine Canvas ─────────── */}
+        {/* ── Closing Callout: Ice Silver Surface ───────────── */}
         <section className="w-full max-w-6xl mx-auto mt-24 sm:mt-32">
-          <div className="editorial-aubergine-surface rounded-3xl p-8 sm:p-14 text-center relative overflow-hidden border border-[#240720] shadow-2xl">
+          <div className="editorial-silver-cta rounded-3xl p-8 sm:p-14 text-center relative overflow-hidden">
             <div className="relative z-10 max-w-2xl mx-auto space-y-6">
-              <span className="inline-block text-[10px] font-mono tracking-widest px-3 py-1 rounded bg-[#FAF8F5]/10 border border-[#FAF8F5]/20 text-[#FAF8F5] uppercase">
+              <span className="inline-block text-[10px] font-mono tracking-widest px-3 py-1 rounded bg-[#FAF8F5]/80 border border-[#3A0F34]/[0.16] text-[#3A0F34] uppercase font-semibold">
                 CLINICAL LITERATURE DISCOVERY
               </span>
 
-              <h2 className="editorial-cta-headline text-3xl sm:text-5xl lg:text-6xl text-[#FAF8F5]">
-                <span className="block">Synthesize literature with</span>
+              <h2 className="editorial-cta-headline text-3xl sm:text-5xl lg:text-6xl text-[#3A0F34]">
+                <span className="block text-[#3A0F34]">Synthesize literature with</span>
                 <span className="editorial-cta-gradient block mt-1.5">
                   journal-ready certainty.
                 </span>
               </h2>
 
-              <p className="text-sm sm:text-base text-[#DDE3E8] leading-relaxed max-w-xl mx-auto">
+              <p className="text-sm sm:text-base text-[#211B20] leading-relaxed max-w-xl mx-auto">
                 No subscription required. Query live PubMed Central databases with automated GRADE assessment and exportable clinical matrices.
               </p>
 
@@ -353,8 +353,8 @@ const Index = () => {
                   onClick={() => navigate("/search")}
                   className="btn-editorial-marigold inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl text-xs font-heading font-bold uppercase tracking-wider"
                 >
-                  <span>Begin Clinical Query</span>
-                  <ArrowRight className="w-4 h-4 text-[#211B20]" />
+                  <span className="text-[#211B20]">Begin Clinical Query</span>
+                  <ArrowRight className="w-4 h-4 text-[#3A0F34]" />
                 </button>
               </div>
             </div>

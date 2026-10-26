@@ -217,13 +217,13 @@ const Search = () => {
                   {pipelineSteps.map((step, i) => (
                     <div
                       key={i}
-                      className="crystal-card rounded-xl p-3 text-center bg-[#FAF8F5] border border-[#DDE3E8] hover:border-[#3A0F34] transition-all"
+                      className="card-ice-silver rounded-xl p-3 text-center"
                     >
                       <div className="text-[10px] font-mono text-[#EAAA00] font-bold mb-1">
                         {step.num} · {step.tag}
                       </div>
                       <p className="text-xs font-bold text-[#211B20] font-heading">{step.label}</p>
-                      <p className="text-[10px] text-[#6B5F69] mt-0.5">{step.desc}</p>
+                      <p className="text-[10px] text-[#5A4E58] mt-0.5">{step.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -247,20 +247,20 @@ const Search = () => {
                       <button
                         key={i}
                         onClick={() => handleExampleClick(q)}
-                        className="crystal-card rounded-xl p-3.5 text-left border border-[#DDE3E8] hover:border-[#3A0F34] transition-all group flex flex-col justify-between bg-white"
+                        className="card-ice-silver rounded-xl p-3.5 text-left group flex flex-col justify-between"
                       >
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#FAF8F5] text-[#3A0F34] border border-[#DDE3E8] font-semibold uppercase">
+                            <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-[#FAF8F5]/90 text-[#3A0F34] border border-[rgba(58,15,52,0.16)] font-semibold uppercase">
                               {meta.tagLabel}
                             </span>
-                            <ChevronRight className="w-3.5 h-3.5 text-[#B8AEA3] group-hover:text-[#EAAA00] group-hover:translate-x-0.5 transition-all" />
+                            <ChevronRight className="w-3.5 h-3.5 text-[#3A0F34]/60 group-hover:text-[#EAAA00] group-hover:translate-x-0.5 transition-all" />
                           </div>
                           <p className="text-xs font-medium text-[#211B20] leading-snug line-clamp-3">
                             {q}
                           </p>
                         </div>
-                        <span className="text-[9px] font-mono text-[#B8AEA3] mt-3 uppercase tracking-wider">
+                        <span className="text-[9px] font-mono text-[#5A4E58] mt-3 uppercase tracking-wider font-semibold">
                           {meta.spec}
                         </span>
                       </button>
