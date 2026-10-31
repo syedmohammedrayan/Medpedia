@@ -8,7 +8,10 @@ interface NarrativeSynthesisProps {
     synthesis: string;
     conclusion: "positive" | "negative" | "neutral";
   };
+  threadId?: string;
 }
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
 
 const conclusionConfig = {
   positive: {
@@ -40,10 +43,29 @@ const conclusionConfig = {
   },
 };
 
-const NarrativeSynthesis = ({ data }: NarrativeSynthesisProps) => {
+const NarrativeSynthesis = ({ data, threadId }: NarrativeSynthesisProps) => {
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const cfg = conclusionConfig[data.conclusion] || conclusionConfig.neutral;
   const Icon = cfg.icon;
+
+  const handleDownloadPdf = () => {
+    setIsDownloading(true);
+    const activeThread = threadId || "default-user";
+    const downloadUrl = `${API_BASE}/research/download-pdf?thread_id=${encodeURIComponent(activeThread)}`;
+    
+    // Create an anchor element to trigger browser download
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.setAttribute("download", "Medpedia_Comprehensive_Evidence_Report.pdf");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setTimeout(() => {
+      setIsDownloading(false);
+    }, 1500);
+  };
 
   return (
     <motion.div
@@ -63,9 +85,14 @@ const NarrativeSynthesis = ({ data }: NarrativeSynthesisProps) => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="btn-editorial-secondary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-medium">
+          <button
+            onClick={handleDownloadPdf}
+            disabled={isDownloading}
+            className="btn-editorial-secondary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-medium transition-all"
+            title="Download publication-grade research PDF"
+          >
             <Download className="w-3.5 h-3.5 text-[#B8AEA3]" />
-            <span>PDF</span>
+            <span>{isDownloading ? "Downloading…" : "Download PDF"}</span>
           </button>
           <button
             onClick={() => setShowEmailModal(true)}
@@ -132,7 +159,7 @@ const NarrativeSynthesis = ({ data }: NarrativeSynthesisProps) => {
         </div>
       </div>
 
-      <EmailModal open={showEmailModal} onOpenChange={setShowEmailModal} />
+      <EmailModal open={showEmailModal} onOpenChange={setShowEmailModal} threadId={threadId} />
     </motion.div>
   );
 };

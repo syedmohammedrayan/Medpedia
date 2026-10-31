@@ -274,7 +274,13 @@ const Search = () => {
 
           {/* Messages Stream */}
           <AnimatePresence mode="popLayout">
-            {messages.map((m) => <ChatMessage key={m.id} message={m} />)}
+            {messages.map((m) => (
+              <ChatMessage
+                key={m.id}
+                message={m}
+                threadId={sessionRef.current || undefined}
+              />
+            ))}
           </AnimatePresence>
           {isLoading && <PremiumLoader />}
         </div>

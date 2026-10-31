@@ -190,10 +190,12 @@ def med_email_dispatcher_node(state: MedResearchState) -> Dict[str, Any]:
             "articles_list": articles_list,
             "query": query,
         })
-        reply_message = f"{tool_result}✅"
+        if "successfully" in str(tool_result).lower():
+            reply_message = f"{tool_result} ✅"
+        else:
+            reply_message = f"❌ {tool_result}"
     except Exception as e:
         reply_message = f"❌ **Failed to send email:** {e}"
-
 
     return {
         "messages": [AIMessage(content=reply_message)],

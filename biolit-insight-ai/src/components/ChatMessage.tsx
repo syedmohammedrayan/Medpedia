@@ -16,9 +16,10 @@ interface Message {
 
 interface ChatMessageProps {
   message: Message;
+  threadId?: string;
 }
 
-const ChatMessage = ({ message }: ChatMessageProps) => {
+const ChatMessage = ({ message, threadId }: ChatMessageProps) => {
   const isUser = message.type === "user";
   const displayContent =
     typeof message.content === "object"
@@ -81,7 +82,7 @@ const ChatMessage = ({ message }: ChatMessageProps) => {
               <EvidenceTable data={message.data} />
             )}
             {displayContent === "synthesis" && message.data && (
-              <NarrativeSynthesis data={message.data} />
+              <NarrativeSynthesis data={message.data} threadId={threadId} />
             )}
             {!["progress", "articles", "evidence-table", "synthesis"].includes(displayContent) && (
               <div className="editorial-card rounded-2xl rounded-tl-sm px-6 py-5 border border-[#DDE3E8]">

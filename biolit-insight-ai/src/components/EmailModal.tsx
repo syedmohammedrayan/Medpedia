@@ -8,56 +8,113 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Mail, Check } from "lucide-react";
+import { Mail, Check, AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface EmailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  threadId?: string;
 }
 
-const EmailModal = ({ open, onOpenChange }: EmailModalProps) => {
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
+
+const EmailModal = ({ open, onOpenChange, threadId }: EmailModalProps) => {
   const [email, setEmail] = useState("");
-  const [includeExcel, setIncludeExcel] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const { toast } = useToast();
 
   const handleSend = async () => {
-    if (!email || !email.includes("@")) {
+    setError(null);
+    const cleanedEmail = email.trim();
+    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$/;
+
+    if (!cleanedEmail || !emailRegex.test(cleanedEmail)) {
       toast({
         title: "Invalid address",
-        description: "Please specify a valid institutional or personal email address.",
+        description: "Please specify a valid clinician or institutional email address.",
         variant: "destructive",
       });
       return;
     }
 
     setIsSending(true);
-    
-    // Simulate dispatch
-    setTimeout(() => {
+    setStatusMessage("Compiling research synthesis & PDF dossier…");
+
+    try {
+      // 1. Progress to dispatch phase
+      setTimeout(() => {
+        setStatusMessage("Dispatching binary PDF attachment via HTTPS…");
+      }, 900);
+
+      const activeThreadId = threadId || "default-user";
+      const response = await fetch(`${API_BASE}/research/dispatch-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: cleanedEmail,
+          thread_id: activeThreadId,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.success) {
+        const errorMsg = data.error || data.detail || `Server error (${response.status}): Failed to dispatch email.`;
+        setError(errorMsg);
+        setIsSending(false);
+        setStatusMessage("");
+        toast({
+          title: "Dispatch Failed",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Real success confirmed by backend
       setIsSending(false);
       setSent(true);
-      
+      toast({
+        title: "Report Dispatched",
+        description: `Comprehensive evidence dossier successfully delivered to ${cleanedEmail}`,
+      });
+
       setTimeout(() => {
-        toast({
-          title: "Report Dispatched",
-          description: `Comprehensive evidence report delivered to ${email}`,
-        });
-        setTimeout(() => {
-          onOpenChange(false);
-          setSent(false);
-          setEmail("");
-        }, 1500);
-      }, 1000);
-    }, 1500);
+        onOpenChange(false);
+        setSent(false);
+        setEmail("");
+        setError(null);
+        setStatusMessage("");
+      }, 2500);
+
+    } catch (err: any) {
+      setIsSending(false);
+      setStatusMessage("");
+      const networkError = err.message || "Failed to connect to the Medpedia research dispatch server.";
+      setError(networkError);
+      toast({
+        title: "Connection Error",
+        description: networkError,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDialogChange = (isOpen: boolean) => {
+    if (!isSending) {
+      setError(null);
+      setStatusMessage("");
+      onOpenChange(isOpen);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-md bg-[#FAF8F5] border border-[#DDE3E8] p-6 rounded-2xl shadow-xl">
         <DialogHeader className="space-y-2 border-b border-[#DDE3E8] pb-4">
           <div className="flex items-center gap-2.5">
@@ -69,7 +126,7 @@ const EmailModal = ({ open, onOpenChange }: EmailModalProps) => {
                 Dispatch Evidence Dossier
               </DialogTitle>
               <DialogDescription className="text-xs text-[#6B5F69]">
-                Receive a formatted PDF evidence synthesis and extraction matrix.
+                Receive the formatted PDF evidence synthesis and complete literature citations.
               </DialogDescription>
             </div>
           </div>
@@ -85,43 +142,56 @@ const EmailModal = ({ open, onOpenChange }: EmailModalProps) => {
             >
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-xs font-mono uppercase tracking-wider text-[#3A0F34] font-bold">
-                  Recipient Address
+                  Recipient Institutional Address
                 </Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="clinician@hospital.edu"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError(null);
+                  }}
                   disabled={isSending}
                   className="bg-white border-[#DDE3E8] text-[#211B20] text-sm focus-visible:ring-[#3A0F34] focus-visible:border-[#3A0F34]"
                 />
               </div>
 
-              <div className="flex items-start space-x-2.5 pt-1">
-                <Checkbox
-                  id="excel"
-                  checked={includeExcel}
-                  onCheckedChange={(checked) => setIncludeExcel(checked as boolean)}
-                  disabled={isSending}
-                  className="border-[#DDE3E8] data-[state=checked]:bg-[#3A0F34] data-[state=checked]:border-[#3A0F34]"
-                />
-                <Label
-                  htmlFor="excel"
-                  className="text-xs text-[#6B5F69] font-normal leading-tight cursor-pointer"
-                >
-                  Attach complete PICO evidence extraction matrix as spreadsheet (.xlsx)
-                </Label>
+              {/* Real Status Progression */}
+              {isSending && (
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-white border border-[#DDE3E8] text-xs text-[#3A0F34]">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#EAAA00] flex-shrink-0" />
+                  <span className="font-medium">{statusMessage}</span>
+                </div>
+              )}
+
+              {/* Real Error Feedback */}
+              {error && (
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800">
+                  <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <strong className="block font-semibold">Delivery Unsuccessful</strong>
+                    <span>{error}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-3 rounded-xl bg-[#FAF8F5] border border-[#DDE3E8] text-[11px] text-[#6B5F69] space-y-1">
+                <div className="font-semibold text-[#3A0F34]">Included in Attachment:</div>
+                <div>&bull; Systematic Evidence Summary & PICO Analysis</div>
+                <div>&bull; Complete Source Records with Verified PubMed / PMC URLs</div>
+                <div>&bull; Publication Document: <code>Medpedia_Comprehensive_Evidence_Report.pdf</code></div>
               </div>
 
               <div className="pt-2">
                 <button
                   onClick={handleSend}
-                  disabled={isSending}
-                  className="btn-editorial-primary w-full py-2.5 rounded-xl text-xs font-heading font-semibold uppercase tracking-wider flex items-center justify-center gap-2"
+                  disabled={isSending || !email.trim()}
+                  className="btn-editorial-primary w-full py-2.5 rounded-xl text-xs font-heading font-semibold uppercase tracking-wider flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                 >
                   {isSending ? (
-                    <span>Compiling Report…</span>
+                    <span>Processing Transmit…</span>
                   ) : (
                     <>
                       <span>Transmit Dossier</span>
@@ -138,14 +208,14 @@ const EmailModal = ({ open, onOpenChange }: EmailModalProps) => {
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center py-6 space-y-3"
             >
-              <div className="w-12 h-12 bg-[#3A0F34] rounded-full flex items-center justify-center">
+              <div className="w-12 h-12 bg-[#3A0F34] rounded-full flex items-center justify-center shadow-md">
                 <Check className="w-6 h-6 text-[#EAAA00]" />
               </div>
               <p className="text-sm font-bold text-[#211B20] font-heading">
-                Dossier Dispatched Successfully
+                Evidence Dossier Dispatched
               </p>
-              <p className="text-xs text-[#6B5F69] text-center max-w-xs">
-                Check your inbox for the compiled literature synthesis and evidence table.
+              <p className="text-xs text-[#6B5F69] text-center max-w-xs leading-relaxed">
+                The complete research report PDF has been delivered to <strong>{email}</strong>.
               </p>
             </motion.div>
           )}
