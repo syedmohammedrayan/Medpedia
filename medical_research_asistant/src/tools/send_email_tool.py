@@ -192,18 +192,8 @@ def send_email(
     except ValueError:
         smtp_timeout = 15.0
 
-    brevo_api_key = (os.getenv("BREVO_API_KEY") or "").strip()
-
     # 4. Check for SMTP credentials
     if not smtp_user or not smtp_password:
-        # If Brevo is configured and SMTP is not, allow Brevo as an optional fallback
-        if brevo_api_key:
-            return _dispatch_via_brevo(
-                brevo_api_key=brevo_api_key,
-                sender_email=smtp_user or "noreply@medpedia.app",
-                recipient_email=target_recipient,
-                evidence_report=evidence_report,
-            )
         return "Error: Missing SMTP credentials. SMTP_USER and SMTP_PASSWORD must be configured in environment variables."
 
     # 5. Build email message (both text and HTML parts for multipart/alternative)
@@ -356,35 +346,3 @@ def send_email(
     except Exception as exc:
         return f"Error: Unexpected error while sending email: {exc}"
 
-
-def _dispatch_via_brevo(
-    brevo_api_key: str,
-    sender_email: str,
-    recipient_email: str,
-    evidence_report: str,
-) -> str:
-    """Optional fallback via Brevo API when SMTP credentials are not configured."""
-    try:
-        import httpx
-        now = datetime.now(timezone.utc).strftime("%B %d, %Y")
-        report_html = _markdown_to_html(evidence_report)
-        html_body = f"<html><body>{report_html}</body></html>"
-        resp = httpx.post(
-            "https://api.brevo.com/v3/smtp/email",
-            headers={
-                "api-key": brevo_api_key,
-                "Content-Type": "application/json",
-            },
-            json={
-                "sender": {"name": "Medpedia", "email": sender_email},
-                "to": [{"email": recipient_email}],
-                "subject": f"🔬 Medical Research Insights – {now}",
-                "htmlContent": html_body,
-            },
-            timeout=15.0,
-        )
-        if resp.status_code in (200, 201):
-            return "Email sent successfully."
-        return f"Error from Brevo API ({resp.status_code}): {resp.text}"
-    except Exception as api_err:
-        return f"Error sending via Brevo: {api_err}"
