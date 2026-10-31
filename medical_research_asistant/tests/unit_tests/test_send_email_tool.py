@@ -136,7 +136,71 @@ def test_missing_smtp_credentials():
             "evidence_report": "Some report",
             "recipient_email": "user@example.com",
         })
-        assert "Missing SMTP credentials" in result
+        assert "Missing email credentials" in result
+
+
+# ── Test 5b: EmailJS Dispatch (HTTPS Port 443) ──────────────────────────────
+def test_emailjs_dispatch_success():
+    """Verify that EmailJS HTTPS dispatch succeeds with correct payload."""
+    env = {
+        "EMAILJS_SERVICE_ID": "service_test123",
+        "EMAILJS_TEMPLATE_ID": "template_test456",
+        "EMAILJS_PUBLIC_KEY": "pub_key_789",
+        "EMAILJS_PRIVATE_KEY": "priv_key_000",
+    }
+    with patch.dict(os.environ, env, clear=True):
+        with patch("tools.send_email_tool.requests.post") as mock_post:
+            mock_resp = MagicMock()
+            mock_resp.status_code = 200
+            mock_resp.text = "OK"
+            mock_post.return_value = mock_resp
+
+            result = send_email.invoke({
+                "evidence_report": "## Clinical Evidence\nKey insights here.",
+                "recipient_email": "physician@hospital.edu",
+            })
+
+            assert result == "Email sent successfully."
+            mock_post.assert_called_once()
+            call_kwargs = mock_post.call_args[1]
+            payload = call_kwargs["json"]
+
+            assert payload["service_id"] == "service_test123"
+            assert payload["template_id"] == "template_test456"
+            assert payload["user_id"] == "pub_key_789"
+            assert payload["accessToken"] == "priv_key_000"
+            assert payload["template_params"]["to_email"] == "physician@hospital.edu"
+            assert "Clinical Evidence" in payload["template_params"]["message_html"]
+
+
+def test_emailjs_failure_falls_back_to_smtp():
+    """Verify that when EmailJS fails, it falls back to direct Gmail SMTP."""
+    env = {
+        "EMAILJS_SERVICE_ID": "service_test",
+        "EMAILJS_TEMPLATE_ID": "template_test",
+        "EMAILJS_PUBLIC_KEY": "pub_key_test",
+        "SMTP_USER": "syedmohammedrayan2007@gmail.com",
+        "SMTP_PASSWORD": "app_password",
+    }
+    with patch.dict(os.environ, env, clear=True):
+        with patch("tools.send_email_tool.requests.post") as mock_post:
+            mock_resp = MagicMock()
+            mock_resp.status_code = 500
+            mock_resp.text = "Internal Server Error"
+            mock_post.return_value = mock_resp
+
+            with patch("smtplib.SMTP") as mock_smtp:
+                server = MagicMock()
+                mock_smtp.return_value.__enter__.return_value = server
+
+                result = send_email.invoke({
+                    "evidence_report": "Report content",
+                    "recipient_email": "user@example.com",
+                })
+
+                assert result == "Email sent successfully."
+                mock_smtp.assert_called_once()
+
 
 
 def test_empty_evidence_report():
