@@ -92,9 +92,44 @@ npm run dev
 
 Open the Vite URL shown in the terminal. The current frontend expects the API at `http://localhost:8000`.
 
-### Environment
+### Environment & Email Configuration
 
 The backend requires a Gemini API key (`GEMINI_API_KEY`). NCBI and SMTP settings are also needed for literature retrieval and email delivery. See [`medical_research_asistant/.env.example`](medical_research_asistant/.env.example).
+
+#### Gmail SMTP Setup
+
+Medpedia uses standard Gmail SMTP (`smtp.gmail.com:587` with STARTTLS) to deliver structured evidence reports to any valid recipient email address (Gmail, Outlook, Yahoo, institutional `.edu` addresses, etc.) without requiring a custom domain purchase.
+
+##### Why Resend Was Replaced
+Previously, Resend was used for REST-based dispatch. However, Resend restricts delivery on unverified free-tier accounts strictly to the account owner's email address and requires purchasing and configuring a custom DNS domain to email external recipients. Gmail SMTP removes this barrier, enabling any first-time visitor to receive reports at their own email address using a personal Gmail account and App Password.
+
+##### Generating a Google App Password
+1. Enable **2-Step Verification** on your Google Account: [Google Account Security](https://myaccount.google.com/security).
+2. Go to **App Passwords**: [https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords).
+3. Under *App Name*, enter `Medpedia` and click **Create**.
+4. Copy the generated 16-character passcode (e.g., `abcd efgh ijkl mnop`).
+5. Reference official documentation: [Sign in with app passwords](https://support.google.com/mail/answer/185833).
+
+##### Environment Variables Configuration
+
+Configure the following variables in `medical_research_asistant/.env` for local development, or in your backend hosting platform's environment variables dashboard (e.g. Render, Railway, Fly.io):
+
+```env
+# Gmail SMTP Configuration
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=syedmohammedrayan2007@gmail.com
+SMTP_PASSWORD=your-16-char-app-password
+SMTP_TIMEOUT=15
+```
+
+##### Sending Limits & Hosting Notes
+- **Daily Sending Limits**: Standard personal Gmail accounts are subject to Google's daily sending limit of 500 emails per 24-hour rolling period.
+- **Port Restrictions**: Render Free Tier blocks outbound TCP traffic on ports 25, 465, and 587. For production deployment on Render, use a paid instance or host the backend on providers that permit outbound SMTP (such as Railway, Fly.io, Koyeb, DigitalOcean, or AWS).
+- **Troubleshooting**:
+  - `535 Authentication failed`: Ensure 2-Step Verification is enabled and that you are using the 16-character App Password (without spaces), NOT your regular Google password.
+  - `Connection timed out`: Verify network firewall or hosting provider allows outbound traffic to `smtp.gmail.com:587`.
+  - `Only a single recipient email address is allowed`: Ensure you enter a single clean email address without commas or semicolons.
 
 ## Validation
 
@@ -107,8 +142,9 @@ cd ../medical_research_asistant
 uv run pytest
 ```
 
-The repository currently has limited automated coverage. The backend integration path depends on external model and service credentials, and no frontend test suite is configured yet.
+The backend unit test suite covers SMTP configuration, connection protocol sequence, dynamic recipient handling, sender integrity, error handling, HTML report payload generation, and LangGraph workflow dispatch.
 
 ## Project Status
 
 This is a working academic/prototype system with a complete demonstrated flow. Before production deployment, the next engineering priorities are durable checkpoint storage, strict CORS and input validation, configurable API URLs, stronger evidence evaluation, deduplication, and connecting every visible export action to a real backend implementation.
+

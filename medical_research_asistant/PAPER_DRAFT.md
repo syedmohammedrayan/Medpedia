@@ -2,7 +2,7 @@
 
 ## Abstract
 
-The exponential growth of biomedical literature presents a critical bottleneck for clinicians and researchers who must synthesize evidence from thousands of publications to make informed decisions. Manual literature review is time-intensive, often requiring two to three hours per clinical query. This paper presents **MedGraph**, an end-to-end agentic pipeline that automates biomedical evidence retrieval, synthesis, and dissemination using Large Language Models (LLMs) orchestrated through the LangGraph framework. MedGraph employs a four-node sequential graph comprising a ReAct-based query ingestor, a direct LLM evidence builder, a human-in-the-loop email collector, and an automated email dispatcher. The system integrates with NCBI PubMed via E-utilities APIs and leverages Google Gemini 3.5 Flash Lite for evidence classification. Evaluation across five diverse medical domains demonstrated consistent retrieval of ten articles per query in an average of 44.6 seconds, with an evidence distribution of 24% Strong, 26% Moderate, and 50% Preliminary studies. The system successfully delivered structured HTML evidence reports via email in all five test cases. Two key limitations — duplicate article retrieval and query scope drift — were identified and are discussed as directions for future improvement. MedGraph demonstrates that agentic LLM workflows can meaningfully reduce the time burden of biomedical literature review while preserving evidence quality classification.
+The exponential growth of biomedical literature presents a critical bottleneck for clinicians and researchers who must synthesize evidence from thousands of publications to make informed decisions. Manual literature review is time-intensive, often requiring two to three hours per clinical query. This paper presents **Medpedia**, an end-to-end agentic pipeline that automates biomedical evidence retrieval, synthesis, and dissemination using Large Language Models (LLMs) orchestrated through the LangGraph framework. MedGraph employs a four-node sequential graph comprising a ReAct-based query ingestor, a direct LLM evidence builder, a human-in-the-loop email collector, and an automated email dispatcher. The system integrates with NCBI PubMed via E-utilities APIs and leverages Google Gemini 3.5 Flash Lite for evidence classification. Evaluation across five diverse medical domains demonstrated consistent retrieval of ten articles per query in an average of 44.6 seconds, with an evidence distribution of 24% Strong, 26% Moderate, and 50% Preliminary studies. The system successfully delivered structured HTML evidence reports via email in all five test cases. Two key limitations — duplicate article retrieval and query scope drift — were identified and are discussed as directions for future improvement. MedGraph demonstrates that agentic LLM workflows can meaningfully reduce the time burden of biomedical literature review while preserving evidence quality classification.
 
 **Keywords:** Large Language Models, LangGraph, PubMed, Evidence Synthesis, ReAct Agent, Biomedical NLP, Human-in-the-Loop, Medical AI
 
@@ -16,7 +16,7 @@ Existing tools such as PubMed's native search interface, clinical decision suppo
 
 The emergence of Large Language Models (LLMs) such as GPT-4 and Gemini has opened new possibilities for natural language biomedical question answering [3]. However, most LLM-based approaches either rely on pre-trained static knowledge or perform single-turn retrieval-augmented generation (RAG) without structured evidence grading. Neither approach provides the automated, end-to-end workflow that clinical and research settings demand.
 
-This paper presents **MedGraph**, a fully agentic pipeline built on the LangGraph orchestration framework that addresses these gaps. MedGraph accepts a free-text clinical query, autonomously retrieves and synthesizes PubMed evidence, classifies articles by study type and evidence strength, and delivers a formatted report to the user via email — all within approximately 45 seconds. The system introduces a human-in-the-loop interrupt mechanism that personalizes delivery without disrupting the automated flow.
+This paper presents **Medpedia**, a fully agentic pipeline built on the LangGraph orchestration framework that addresses these gaps. MedGraph accepts a free-text clinical query, autonomously retrieves and synthesizes PubMed evidence, classifies articles by study type and evidence strength, and delivers a formatted report to the user via email — all within approximately 45 seconds. The system introduces a human-in-the-loop interrupt mechanism that personalizes delivery without disrupting the automated flow.
 
 The key contributions of this work are:
 1. A novel four-node agentic graph architecture that separates query understanding, evidence synthesis, user interaction, and report delivery into specialized nodes.
@@ -42,7 +42,7 @@ The ReAct (Reasoning + Acting) paradigm [10] enables LLMs to interleave reasonin
 
 ### D. Evidence-Based Medicine Automation
 
-Systematic reviews and meta-analyses represent the gold standard in evidence-based medicine, but their production requires months of expert effort [13]. Tools like Rayyan and Covidence assist with screening but do not automate the synthesis step. MedGraph differs by targeting rapid evidence synthesis for individual clinical queries rather than formal systematic review production.
+Systematic reviews and meta-analyses represent the gold standard in evidence-based medicine, but their production requires months of expert effort [13]. Tools like Covidence assist with screening but do not automate the synthesis step. MedGraph differs by targeting rapid evidence synthesis for individual clinical queries rather than formal systematic review production.
 
 ---
 
@@ -257,13 +257,13 @@ We evaluated MedGraph across five clinically representative queries spanning dis
 | Q4 | What are the best medications for hypertension management in elderly patients? | Geriatric Cardiology |
 | Q5 | What is the efficacy of SSRIs in treatment of major depressive disorder? | Psychiatry |
 
-Each query was submitted to a live instance of MedGraph and results were captured including article count, evidence classifications, retrieval time, and email delivery status.
+Each query was submitted to a live instance of Medpedia and results were captured including article count, evidence classifications, retrieval time, and email delivery status.
 
 ### B. Retrieval Performance
 
 Table I presents the quantitative results across all five test queries.
 
-**Table I: MedGraph Evaluation Results Across Five Clinical Domains**
+**Table I: Medpedia Evaluation Results Across Five Clinical Domains**
 
 | Query | Articles Retrieved | 🟢 Strong | 🟡 Moderate | 🔴 Preliminary | Time (s) | Email |
 |---|---|---|---|---|---|---|
@@ -330,7 +330,7 @@ Despite these retrieval-level limitations, the system demonstrated highly consis
 
 ## VII. Conclusion
 
-This paper presented MedGraph, an end-to-end agentic pipeline for automated biomedical evidence synthesis. By combining LangGraph-orchestrated ReAct agents, NCBI PubMed retrieval, direct LLM evidence classification, human-in-the-loop email collection, and automated SMTP delivery, MedGraph reduces the time burden of clinical literature review from hours to approximately 45 seconds. Evaluation across five medical domains confirmed consistent retrieval performance and identified two concrete limitations — duplicate article retrieval and query scope drift — that serve as actionable directions for future improvement. MedGraph contributes a novel architectural blueprint for agentic biomedical AI systems that prioritize speed, structure, and clinician accessibility.
+This paper presented Medpedia, an end-to-end agentic pipeline for automated biomedical evidence synthesis. By combining LangGraph-orchestrated ReAct agents, NCBI PubMed retrieval, direct LLM evidence classification, human-in-the-loop email collection, and automated SMTP delivery, Medpedia reduces the time burden of clinical literature review from hours to approximately 45 seconds. Evaluation across five medical domains confirmed consistent retrieval performance and identified two concrete limitations — duplicate article retrieval and query scope drift — that serve as actionable directions for future improvement. Medpedia contributes a novel architectural blueprint for agentic biomedical AI systems that prioritize speed, structure, and clinician accessibility.
 
 ---
 
