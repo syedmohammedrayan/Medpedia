@@ -139,21 +139,26 @@ def test_missing_smtp_credentials():
         assert "Missing email credentials" in result
 
 
-# ── Test 5b: EmailJS Dispatch (HTTPS Port 443) ──────────────────────────────
-def test_emailjs_dispatch_success():
-    """Verify that EmailJS HTTPS dispatch succeeds with correct payload and PDF."""
+# ── Test 5b: Google Gmail REST API Dispatch (HTTPS Port 443) ────────────────
+def test_gmail_api_dispatch_success():
+    """Verify that Google Gmail REST API dispatch succeeds with OAuth token exchange and PDF."""
     env = {
-        "EMAILJS_SERVICE_ID": "service_test123",
-        "EMAILJS_TEMPLATE_ID": "template_test456",
-        "EMAILJS_PUBLIC_KEY": "pub_key_789",
-        "EMAILJS_PRIVATE_KEY": "priv_key_000",
+        "GMAIL_CLIENT_ID": "mock_client_id.apps.googleusercontent.com",
+        "GMAIL_CLIENT_SECRET": "mock_client_secret",
+        "GMAIL_REFRESH_TOKEN": "mock_refresh_token",
+        "GMAIL_SENDER_EMAIL": "syedmohammedrayan2007@gmail.com",
     }
     with patch.dict(os.environ, env, clear=True):
         with patch("tools.send_email_tool.requests.post") as mock_post:
-            mock_resp = MagicMock()
-            mock_resp.status_code = 200
-            mock_resp.text = "OK"
-            mock_post.return_value = mock_resp
+            token_resp = MagicMock()
+            token_resp.status_code = 200
+            token_resp.json.return_value = {"access_token": "mock_access_token_123"}
+
+            send_resp = MagicMock()
+            send_resp.status_code = 200
+            send_resp.json.return_value = {"id": "18c12345678"}
+
+            mock_post.side_effect = [token_resp, send_resp]
 
             result = send_email.invoke({
                 "evidence_report": "## Clinical Evidence\nKey insights here.",
@@ -161,39 +166,35 @@ def test_emailjs_dispatch_success():
             })
 
             assert result == "Email sent successfully."
-            mock_post.assert_called_once()
-            call_kwargs = mock_post.call_args[1]
+            assert mock_post.call_count == 2
 
-            # Verify /send-form or /send was invoked with data and files
-            data = call_kwargs.get("data") or call_kwargs.get("json", {})
-            assert data["service_id"] == "service_test123"
-            assert data["template_id"] == "template_test456"
-            assert data["user_id"] == "pub_key_789"
-            assert data["accessToken"] == "priv_key_000"
-            assert (
-                data.get("to_email") == "physician@hospital.edu"
-                or data.get("template_params", {}).get("to_email") == "physician@hospital.edu"
-            )
-            if "files" in call_kwargs:
-                assert "content" in call_kwargs["files"]
-                assert call_kwargs["files"]["content"][0] == "Medpedia_Evidence_Report.pdf"
+            # Verify OAuth token exchange
+            token_call = mock_post.call_args_list[0]
+            assert token_call[0][0] == "https://oauth2.googleapis.com/token"
+            assert token_call[1]["data"]["refresh_token"] == "mock_refresh_token"
+
+            # Verify Gmail API messages.send
+            send_call = mock_post.call_args_list[1]
+            assert send_call[0][0] == "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+            assert send_call[1]["headers"]["Authorization"] == "Bearer mock_access_token_123"
+            assert "raw" in send_call[1]["json"]
 
 
-def test_emailjs_failure_falls_back_to_smtp():
-    """Verify that when EmailJS fails, it falls back to direct Gmail SMTP."""
+def test_gmail_api_failure_falls_back_to_smtp():
+    """Verify that when Gmail API token refresh fails, it falls back to direct Gmail SMTP."""
     env = {
-        "EMAILJS_SERVICE_ID": "service_test",
-        "EMAILJS_TEMPLATE_ID": "template_test",
-        "EMAILJS_PUBLIC_KEY": "pub_key_test",
+        "GMAIL_CLIENT_ID": "client_id",
+        "GMAIL_CLIENT_SECRET": "client_secret",
+        "GMAIL_REFRESH_TOKEN": "bad_token",
         "SMTP_USER": "syedmohammedrayan2007@gmail.com",
         "SMTP_PASSWORD": "app_password",
     }
     with patch.dict(os.environ, env, clear=True):
         with patch("tools.send_email_tool.requests.post") as mock_post:
-            mock_resp = MagicMock()
-            mock_resp.status_code = 500
-            mock_resp.text = "Internal Server Error"
-            mock_post.return_value = mock_resp
+            token_resp = MagicMock()
+            token_resp.status_code = 400
+            token_resp.text = "invalid_grant"
+            mock_post.return_value = token_resp
 
             with patch("smtplib.SMTP") as mock_smtp:
                 server = MagicMock()
@@ -207,41 +208,6 @@ def test_emailjs_failure_falls_back_to_smtp():
                 assert result == "Email sent successfully."
                 mock_smtp.assert_called_once()
 
-
-def test_emailjs_payload_size_strictly_within_50kb():
-    """Verify that even with a massive 100KB+ evidence report, EmailJS payload stays strictly under 50KB."""
-    import json
-    env = {
-        "EMAILJS_SERVICE_ID": "service_test",
-        "EMAILJS_TEMPLATE_ID": "template_test",
-        "EMAILJS_PUBLIC_KEY": "pub_key_test",
-    }
-    massive_report = (
-        "## Executive Summary\n\n"
-        "Crucial clinical conclusions here.\n\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "## Source Articles\n\n"
-        + "\n\n".join([f"### Article #{i}: Long medical study\n- Detailed text content describing trial results and data: " + "Clinical data evidence. " * 30 for i in range(1, 100)])
-    )
-    assert len(massive_report.encode("utf-8")) > 60000
-
-    with patch.dict(os.environ, env, clear=True):
-        with patch("tools.send_email_tool.requests.post") as mock_post:
-            mock_resp = MagicMock()
-            mock_resp.status_code = 200
-            mock_post.return_value = mock_resp
-
-            result = send_email.invoke({
-                "evidence_report": massive_report,
-                "recipient_email": "physician@hospital.edu",
-            })
-
-            assert result == "Email sent successfully."
-            call_kwargs = mock_post.call_args[1]
-            data = call_kwargs.get("data") or call_kwargs.get("json", {})
-            html_body = data.get("message_html") or data.get("template_params", {}).get("message_html", "")
-            assert len(html_body.encode("utf-8")) < 48000
-            assert "Executive Summary" in html_body
 
 
 def test_empty_evidence_report():

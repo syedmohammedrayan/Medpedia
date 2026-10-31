@@ -4,11 +4,13 @@ send_email_tool.py
 Provides the `send_email` LangChain-compatible tool used by the
 med_email_dispatcher node in the LangGraph pipeline.
 
-Sends the full evidence report (evidence cards + synthesis) as a
-styled HTML email using EmailJS over HTTPS (Port 443 — works seamlessly
-on Render Free Tier) with direct Gmail SMTP (port 587) fallback.
+Sends the full clinical evidence report and attached publication-grade
+PDF dossier directly through the Google Gmail REST API over HTTPS
+(Port 443 — works seamlessly on Render Free Tier and all cloud hosts)
+with direct Gmail SMTP (port 587) fallback for local development.
 """
 
+import base64
 import html
 import json
 import os
@@ -38,7 +40,6 @@ def _markdown_to_html(md: str) -> str:
     Enhanced Markdown → HTML converter for the evidence report.
     Converts headers, lists, links, bold, and card-style sections
     while ensuring safe HTML escaping of untrusted input.
-    Generates compact markup using CSS classes to avoid 50KB payload bloat.
     """
     link_re   = re.compile(r'\[([^\]]+)\]\((https?://[^\s)"\']+)\)')
     bold_re   = re.compile(r'\*\*(.+?)\*\*')
@@ -111,7 +112,6 @@ def _markdown_to_html(md: str) -> str:
             processed = bold_re.sub(r"<strong>\1</strong>", processed)
             processed = italic_re.sub(r"<em>\1</em>", processed)
 
-            # Special check for article "Cards" header or badges
             if "Article #" in processed or "STUDY TYPE" in processed.upper() or "EVIDENCE" in processed.upper():
                 html_lines.append(f'<div class="card">{processed}</div>')
             else:
@@ -123,45 +123,6 @@ def _markdown_to_html(md: str) -> str:
     return "\n".join(html_lines)
 
 
-def _fit_report_html(report_html: str, max_allowed_bytes: int = 38000) -> str:
-    """
-    Guarantees that the generated HTML content strictly fits within
-    EmailJS's 50KB total variables payload limit (51,200 bytes).
-    If report_html exceeds max_allowed_bytes, gracefully truncates at a
-    clean block boundary and appends a professional dashboard reference notice.
-    """
-    raw = report_html.encode("utf-8")
-    if len(raw) <= max_allowed_bytes:
-        return report_html
-
-    notice = (
-        '<div class="notice-card">'
-        '<em>📄 Note: Additional bibliography records condensed to meet email delivery limit (50KB). '
-        'The complete synthesis and full literature records are saved on your Medpedia Web Dashboard.</em>'
-        '</div>'
-    )
-    notice_bytes_len = len(notice.encode("utf-8"))
-    target_bytes = max_allowed_bytes - notice_bytes_len - 150
-    sliced = raw[:target_bytes].decode("utf-8", errors="ignore")
-
-    # Find the nearest clean tag boundary
-    best_cut = -1
-    for marker in ("</p>", "</div>", "</li>", "</ul>", "</h3>", "</h2>", "<hr>"):
-        idx = sliced.rfind(marker)
-        if idx > best_cut:
-            best_cut = idx + len(marker)
-
-    if best_cut > 1000:
-        safe_cut = sliced[:best_cut]
-    else:
-        safe_cut = sliced
-
-    if safe_cut.count("<ul>") > safe_cut.count("</ul>"):
-        safe_cut += "</ul>"
-
-    return safe_cut + "\n" + notice
-
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Helper — Email Validation
 # ──────────────────────────────────────────────────────────────────────────────
@@ -169,19 +130,15 @@ def _fit_report_html(report_html: str, max_allowed_bytes: int = 38000) -> str:
 _EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9]+([.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,}$")
 
 def _validate_recipient_email(email_str: str) -> tuple[bool, str]:
-    """
-    Validates recipient email address for safety, syntax, and header injection.
-    """
+    """Validates recipient email address for safety, syntax, and header injection."""
     if not email_str or not isinstance(email_str, str) or not email_str.strip():
         return False, "Error: Recipient email address is required and cannot be empty."
 
     cleaned = email_str.strip()
 
-    # Reject newline characters and header-injection attempts
     if "\r" in cleaned or "\n" in cleaned:
         return False, "Error: Invalid recipient email address: contains prohibited newline characters."
 
-    # Reject multiple addresses (single recipient expected)
     if "," in cleaned or ";" in cleaned or " " in cleaned:
         return False, "Error: Only a single recipient email address is allowed."
 
@@ -192,89 +149,97 @@ def _validate_recipient_email(email_str: str) -> tuple[bool, str]:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Helper — Dispatch via EmailJS (HTTPS Port 443)
+# Primary Transport: Official Google Gmail REST API (HTTPS Port 443)
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _dispatch_via_emailjs(
-    service_id: str,
-    template_id: str,
-    public_key: str,
-    private_key: str,
-    recipient_email: str,
-    subject: str,
-    html_body: str,
-    pdf_bytes: Optional[bytes] = None,
-    timeout: float = 20.0,
-) -> str:
-    """
-    Dispatches email via EmailJS REST API over HTTPS (Port 443).
-    Attaches the clinical PDF dossier via /send-form, falling back to /send.
-    """
-    safe_body = html_body
-    params_test = {
-        "to_email": recipient_email,
-        "subject": subject,
-        "message_html": safe_body,
-    }
-    test_bytes = len(json.dumps(params_test).encode("utf-8"))
-    if test_bytes > 48000:
-        overage = test_bytes - 46000
-        safe_body = safe_body[:-overage] + "</div></div></body></html>"
-
-    # 1. Attempt /send-form with attached PDF
-    if pdf_bytes:
-        try:
-            files = {
-                "content": ("Medpedia_Evidence_Report.pdf", pdf_bytes, "application/pdf")
-            }
-            data = {
-                "service_id": service_id,
-                "template_id": template_id,
-                "user_id": public_key,
-                "to_email": recipient_email,
-                "subject": subject,
-                "message_html": safe_body,
-            }
-            if private_key:
-                data["accessToken"] = private_key
-
-            resp = requests.post(
-                "https://api.emailjs.com/api/v1.0/email/send-form",
-                data=data,
-                files=files,
-                timeout=timeout,
-            )
-            if resp.status_code == 200:
-                return "Email sent successfully."
-        except Exception:
-            pass  # Fall through to standard /send
-
-    # 2. Standard /send fallback
+def _get_gmail_access_token(
+    client_id: str,
+    client_secret: str,
+    refresh_token: str,
+    timeout: float = 10.0,
+) -> tuple[bool, str]:
+    """Exchanges a Google OAuth2 refresh token for an active access token."""
     try:
-        payload = {
-            "service_id": service_id,
-            "template_id": template_id,
-            "user_id": public_key,
-            "template_params": {
-                "to_email": recipient_email,
-                "subject": subject,
-                "message_html": safe_body,
-            },
-        }
-        if private_key:
-            payload["accessToken"] = private_key
-
         resp = requests.post(
-            "https://api.emailjs.com/api/v1.0/email/send",
-            json=payload,
-            headers={"Content-Type": "application/json"},
+            "https://oauth2.googleapis.com/token",
+            data={
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token",
+            },
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
             timeout=timeout,
         )
         if resp.status_code == 200:
-            return "Email sent successfully."
-        return f"Error from EmailJS API ({resp.status_code}): {resp.text}"
+            token_data = resp.json()
+            access_token = token_data.get("access_token")
+            if access_token:
+                return True, access_token
+            return False, "Google OAuth response did not contain an access_token."
+        return False, f"Google OAuth token refresh failed ({resp.status_code}): {resp.text}"
     except Exception as exc:
-        return f"Error sending via EmailJS: {exc}"
+        return False, f"Network error refreshing Google OAuth token: {exc}"
+
+
+def _dispatch_via_gmail_api(
+    sender_email: str,
+    recipient_email: str,
+    subject: str,
+    plain_text: str,
+    html_body: str,
+    pdf_bytes: Optional[bytes],
+    client_id: str,
+    client_secret: str,
+    refresh_token: str,
+    timeout: float = 20.0,
+) -> str:
+    """
+    Sends an RFC 2822 multipart email with PDF attachment directly through
+    Google's official Gmail REST API over HTTPS Port 443.
+    Supports up to 35 MB per message with zero intermediary services.
+    """
+    # 1. Obtain fresh Google OAuth access token
+    ok, token_or_err = _get_gmail_access_token(client_id, client_secret, refresh_token, timeout=timeout)
+    if not ok:
+        return f"Error: {token_or_err}"
+    access_token = token_or_err
+
+    # 2. Build standard MIME message
+    msg = MIMEMultipart("mixed")
+    msg["Subject"] = subject
+    msg["From"] = formataddr(("Medpedia", sender_email))
+    msg["To"] = recipient_email
+
+    alt_body = MIMEMultipart("alternative")
+    alt_body.attach(MIMEText(plain_text, "plain", "utf-8"))
+    alt_body.attach(MIMEText(html_body, "html", "utf-8"))
+    msg.attach(alt_body)
+
+    if pdf_bytes:
+        pdf_part = MIMEApplication(pdf_bytes, _subtype="pdf", Name="Medpedia_Evidence_Report.pdf")
+        pdf_part["Content-Disposition"] = 'attachment; filename="Medpedia_Evidence_Report.pdf"'
+        msg.attach(pdf_part)
+
+    # 3. Base64url encode the entire RFC 2822 message
+    raw_b64 = base64.urlsafe_b64encode(msg.as_bytes()).decode("ascii")
+
+    # 4. Dispatch directly via Gmail REST API
+    try:
+        resp = requests.post(
+            "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            json={"raw": raw_b64},
+            timeout=timeout,
+        )
+        if resp.status_code in (200, 201):
+            return "Email sent successfully."
+        return f"Error from Gmail API ({resp.status_code}): {resp.text}"
+    except Exception as exc:
+        return f"Error sending via Gmail API: {exc}"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -292,8 +257,9 @@ def send_email(
     Composes and sends the full evidence report as a styled HTML email with
     an attached clinical PDF report containing complete literature citations,
     websites, Medpedia details, and medical disclaimers.
-    Supports EmailJS HTTPS REST API (Port 443 — works on Render Free Tier)
-    and direct Gmail SMTP (STARTTLS on port 587).
+
+    Dispatches via the official Google Gmail REST API over HTTPS (Port 443),
+    with direct Gmail SMTP (port 587) fallback.
 
     Args:
         evidence_report:  The complete Markdown output from the evidence
@@ -318,7 +284,6 @@ def send_email(
 
     now = datetime.now(timezone.utc).strftime("%B %d, %Y")
     report_html = _markdown_to_html(evidence_report)
-    fitted_report_html = _fit_report_html(report_html, max_allowed_bytes=38000)
     subject = f"🔬 Medical Research Insights – {now}"
 
     # Generate comprehensive PDF clinical dossier
@@ -395,15 +360,6 @@ def send_email(
             border-left: 4px solid #4299E1;
             border-radius: 4px;
         }}
-        .notice-card {{
-            margin: 20px 0;
-            padding: 12px 16px;
-            background-color: #EDF2F7;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #4A5568;
-            text-align: center;
-        }}
         .pdf-banner {{
             background: linear-gradient(135deg, #EBF8FF 0%, #F0F4F8 100%);
             border: 1px solid #BEE3F8;
@@ -444,7 +400,7 @@ def send_email(
                 </div>
             </div>
 
-            {fitted_report_html}
+            {report_html}
         </div>
 
         <div class="footer">
@@ -458,34 +414,46 @@ def send_email(
 </body>
 </html>"""
 
-    # 3. Primary Dispatcher: EmailJS over HTTPS Port 443 (Works on Render Free Tier)
-    emailjs_service_id = (os.getenv("EMAILJS_SERVICE_ID") or "").strip()
-    emailjs_template_id = (os.getenv("EMAILJS_TEMPLATE_ID") or "").strip()
-    emailjs_public_key = (os.getenv("EMAILJS_PUBLIC_KEY") or os.getenv("EMAILJS_USER_ID") or "").strip()
-    emailjs_private_key = (os.getenv("EMAILJS_PRIVATE_KEY") or os.getenv("EMAILJS_ACCESS_TOKEN") or "").strip()
+    plain_text = (
+        f"Medical Research Insights – {now}\n\n"
+        f"📎 Attached Document: Medpedia_Evidence_Report.pdf (Full Clinical Evidence Dossier)\n\n"
+        f"{evidence_report.strip()}\n\n"
+        f"─────────────────────────────────────────────\n"
+        f"Generated by Medpedia Agentic Pipeline\n"
+        f"Platform: https://medpedia-smr.vercel.app\n"
+        f"Medical Disclaimer: This report is for informational purposes only and does not constitute medical advice. "
+        f"Always seek the advice of a physician or other qualified health provider with any questions regarding a medical condition.\n"
+    )
 
-    if emailjs_service_id and emailjs_template_id and emailjs_public_key:
-        res = _dispatch_via_emailjs(
-            service_id=emailjs_service_id,
-            template_id=emailjs_template_id,
-            public_key=emailjs_public_key,
-            private_key=emailjs_private_key,
+    # 3. Primary Dispatcher: Google Gmail REST API (HTTPS Port 443 — Render Free Tier compatible)
+    gmail_client_id = (os.getenv("GMAIL_CLIENT_ID") or "").strip()
+    gmail_client_secret = (os.getenv("GMAIL_CLIENT_SECRET") or "").strip()
+    gmail_refresh_token = (os.getenv("GMAIL_REFRESH_TOKEN") or "").strip()
+    gmail_sender = (os.getenv("GMAIL_SENDER_EMAIL") or os.getenv("SMTP_USER") or "syedmohammedrayan2007@gmail.com").strip()
+
+    if gmail_client_id and gmail_client_secret and gmail_refresh_token:
+        res = _dispatch_via_gmail_api(
+            sender_email=gmail_sender,
             recipient_email=target_recipient,
             subject=subject,
+            plain_text=plain_text,
             html_body=html_body,
             pdf_bytes=pdf_bytes,
+            client_id=gmail_client_id,
+            client_secret=gmail_client_secret,
+            refresh_token=gmail_refresh_token,
         )
         if res == "Email sent successfully.":
             return res
 
-    # 4. Secondary / Direct Dispatcher: Gmail SMTP (Port 587 STARTTLS)
+    # 4. Secondary Dispatcher: Direct Gmail SMTP (Port 587 STARTTLS)
     smtp_user = (os.getenv("SMTP_USER") or "").strip()
     smtp_password = (os.getenv("SMTP_PASSWORD") or "").strip()
 
     if not smtp_user or not smtp_password:
-        if emailjs_service_id and emailjs_template_id:
+        if gmail_client_id and gmail_refresh_token:
             return res
-        return "Error: Missing email credentials. Configure EMAILJS_* or SMTP_* in environment variables."
+        return "Error: Missing email credentials. Configure GMAIL_* or SMTP_* in environment variables."
 
     smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
     smtp_port_raw = os.getenv("SMTP_PORT", "587").strip()
@@ -499,17 +467,6 @@ def send_email(
         smtp_timeout = float(timeout_raw)
     except ValueError:
         smtp_timeout = 15.0
-
-    plain_text = (
-        f"Medical Research Insights – {now}\n\n"
-        f"📎 Attached Document: Medpedia_Evidence_Report.pdf (Full Clinical Evidence Dossier)\n\n"
-        f"{evidence_report.strip()}\n\n"
-        f"─────────────────────────────────────────────\n"
-        f"Generated by Medpedia Agentic Pipeline\n"
-        f"Platform: https://medpedia-smr.vercel.app\n"
-        f"Medical Disclaimer: This report is for informational purposes only and does not constitute medical advice. "
-        f"Always seek the advice of a physician or other qualified health provider with any questions regarding a medical condition.\n"
-    )
 
     msg = MIMEMultipart("mixed")
     msg["Subject"] = subject
@@ -525,7 +482,6 @@ def send_email(
         pdf_part = MIMEApplication(pdf_bytes, _subtype="pdf", Name="Medpedia_Evidence_Report.pdf")
         pdf_part["Content-Disposition"] = 'attachment; filename="Medpedia_Evidence_Report.pdf"'
         msg.attach(pdf_part)
-
 
     try:
         connect_host = smtp_host
@@ -570,7 +526,7 @@ def send_email(
             return (
                 "Error: Network is unreachable [Errno 101]. "
                 "Render Free Tier blocks outbound SMTP traffic on ports 25, 465, and 587. "
-                "Configure EMAILJS_* environment variables to send via HTTPS Port 443."
+                "Configure GMAIL_* environment variables to send via Google Gmail REST API over HTTPS Port 443."
             )
         return f"Error: Network OS error ({getattr(exc, 'errno', 'unknown')}): {exc}"
     except Exception as exc:
