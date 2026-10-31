@@ -5,7 +5,8 @@ Provides the `send_email` LangChain-compatible tool used by the
 med_email_dispatcher node in the LangGraph pipeline.
 
 Sends the full evidence report (evidence cards + synthesis) as a
-styled HTML email using Gmail SMTP (STARTTLS on port 587).
+styled HTML email using EmailJS over HTTPS (Port 443 — works seamlessly
+on Render Free Tier) with direct Gmail SMTP (port 587) fallback.
 """
 
 import html
@@ -19,6 +20,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
 
+import requests
 from langchain_core.tools import tool
 
 
@@ -145,6 +147,48 @@ def _validate_recipient_email(email_str: str) -> tuple[bool, str]:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Helper — Dispatch via EmailJS (HTTPS Port 443)
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _dispatch_via_emailjs(
+    service_id: str,
+    template_id: str,
+    public_key: str,
+    private_key: str,
+    recipient_email: str,
+    subject: str,
+    html_body: str,
+    timeout: float = 15.0,
+) -> str:
+    """Dispatches email via EmailJS REST API over HTTPS (Port 443)."""
+    try:
+        payload = {
+            "service_id": service_id,
+            "template_id": template_id,
+            "user_id": public_key,
+            "template_params": {
+                "to_email": recipient_email,
+                "subject": subject,
+                "message_html": html_body,
+            },
+        }
+        if private_key:
+            payload["accessToken"] = private_key
+
+        resp = requests.post(
+            "https://api.emailjs.com/api/v1.0/email/send",
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=timeout,
+        )
+        if resp.status_code == 200:
+            return "Email sent successfully."
+        return f"Error from EmailJS API ({resp.status_code}): {resp.text}"
+    except Exception as exc:
+        return f"Error sending via EmailJS: {exc}"
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # LangChain Tool
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -154,7 +198,9 @@ def send_email(
     recipient_email: str,
 ) -> str:
     """
-    Composes and sends the full evidence report as a styled HTML email via Gmail SMTP.
+    Composes and sends the full evidence report as a styled HTML email.
+    Supports EmailJS HTTPS REST API (Port 443 — works on Render Free Tier)
+    and direct Gmail SMTP (STARTTLS on port 587).
 
     Args:
         evidence_report:  The complete Markdown output from the evidence
@@ -175,31 +221,11 @@ def send_email(
     if not evidence_report or not evidence_report.strip():
         return "Error: Evidence report is empty. Nothing to dispatch."
 
-    # 3. Read SMTP configuration from environment variables
-    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
-    smtp_port_raw = os.getenv("SMTP_PORT", "587").strip()
-    try:
-        smtp_port = int(smtp_port_raw)
-    except ValueError:
-        smtp_port = 587
-
-    smtp_user = (os.getenv("SMTP_USER") or "").strip()
-    smtp_password = (os.getenv("SMTP_PASSWORD") or "").strip()
-
-    timeout_raw = os.getenv("SMTP_TIMEOUT", "15").strip()
-    try:
-        smtp_timeout = float(timeout_raw)
-    except ValueError:
-        smtp_timeout = 15.0
-
-    # 4. Check for SMTP credentials
-    if not smtp_user or not smtp_password:
-        return "Error: Missing SMTP credentials. SMTP_USER and SMTP_PASSWORD must be configured in environment variables."
-
-    # 5. Build email message (both text and HTML parts for multipart/alternative)
     now = datetime.now(timezone.utc).strftime("%B %d, %Y")
     report_html = _markdown_to_html(evidence_report)
+    subject = f"🔬 Medical Research Insights – {now}"
 
+    # Build styled HTML body
     html_body = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -296,6 +322,47 @@ def send_email(
 </body>
 </html>"""
 
+    # 3. Primary Dispatcher: EmailJS over HTTPS Port 443 (Works on Render Free Tier)
+    emailjs_service_id = (os.getenv("EMAILJS_SERVICE_ID") or "").strip()
+    emailjs_template_id = (os.getenv("EMAILJS_TEMPLATE_ID") or "").strip()
+    emailjs_public_key = (os.getenv("EMAILJS_PUBLIC_KEY") or os.getenv("EMAILJS_USER_ID") or "").strip()
+    emailjs_private_key = (os.getenv("EMAILJS_PRIVATE_KEY") or os.getenv("EMAILJS_ACCESS_TOKEN") or "").strip()
+
+    if emailjs_service_id and emailjs_template_id and emailjs_public_key:
+        res = _dispatch_via_emailjs(
+            service_id=emailjs_service_id,
+            template_id=emailjs_template_id,
+            public_key=emailjs_public_key,
+            private_key=emailjs_private_key,
+            recipient_email=target_recipient,
+            subject=subject,
+            html_body=html_body,
+        )
+        if res == "Email sent successfully.":
+            return res
+
+    # 4. Secondary / Direct Dispatcher: Gmail SMTP (Port 587 STARTTLS)
+    smtp_user = (os.getenv("SMTP_USER") or "").strip()
+    smtp_password = (os.getenv("SMTP_PASSWORD") or "").strip()
+
+    if not smtp_user or not smtp_password:
+        if emailjs_service_id and emailjs_template_id:
+            return res
+        return "Error: Missing email credentials. Configure EMAILJS_* or SMTP_* in environment variables."
+
+    smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
+    smtp_port_raw = os.getenv("SMTP_PORT", "587").strip()
+    try:
+        smtp_port = int(smtp_port_raw)
+    except ValueError:
+        smtp_port = 587
+
+    timeout_raw = os.getenv("SMTP_TIMEOUT", "15").strip()
+    try:
+        smtp_timeout = float(timeout_raw)
+    except ValueError:
+        smtp_timeout = 15.0
+
     plain_text = (
         f"Medical Research Insights – {now}\n\n"
         f"{evidence_report.strip()}\n\n"
@@ -306,18 +373,16 @@ def send_email(
     )
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"🔬 Medical Research Insights – {now}"
+    msg["Subject"] = subject
     msg["From"] = formataddr(("Medpedia", smtp_user))
     msg["To"] = target_recipient
 
     msg.attach(MIMEText(plain_text, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-    # 6. Dispatch via Gmail SMTP
     try:
         connect_host = smtp_host
         try:
-            # Prefer IPv4 to avoid broken IPv6 routes in cloud/container environments
             addr_info = socket.getaddrinfo(smtp_host, smtp_port, socket.AF_INET, socket.SOCK_STREAM)
             if addr_info:
                 connect_host = addr_info[0][4][0]
@@ -326,7 +391,7 @@ def send_email(
 
         context = ssl.create_default_context()
         with smtplib.SMTP(connect_host, smtp_port, timeout=smtp_timeout) as server:
-            server._host = smtp_host  # Preserves SNI hostname validation for STARTTLS
+            server._host = smtp_host
             server.ehlo()
             server.starttls(context=context)
             server.ehlo()
@@ -357,11 +422,9 @@ def send_email(
         if getattr(exc, "errno", None) == 101 or "unreachable" in str(exc).lower():
             return (
                 "Error: Network is unreachable [Errno 101]. "
-                "Render Free Tier blocks outbound SMTP traffic on ports 25, 465, and 587 to prevent spam abuse. "
-                "To send emails via Gmail SMTP from cloud hosting, upgrade Render to a paid instance or deploy to a host that permits outbound port 587 (such as Koyeb)."
+                "Render Free Tier blocks outbound SMTP traffic on ports 25, 465, and 587. "
+                "Configure EMAILJS_* environment variables to send via HTTPS Port 443."
             )
         return f"Error: Network OS error ({getattr(exc, 'errno', 'unknown')}): {exc}"
     except Exception as exc:
         return f"Error: Unexpected error while sending email: {exc}"
-
-
