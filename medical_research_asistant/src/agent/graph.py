@@ -169,28 +169,31 @@ def med_email_dispatcher_node(state: MedResearchState) -> Dict[str, Any]:
     """
     evidence_report = state.get("evidence_report", "No evidence report available.")
     articles_list = state.get("articles_report", "No articles list available.")
-
     recipient_email = state.get("recipient_email", "")
 
-    # Combine them for the email tool
-    combined_content = (
-        "# 🔬 Medical Research Insights\n\n"
-        "## 🧪 Executive Evidence Summary\n\n"
-        f"{evidence_report}\n\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "## 📚 Source Articles (Search Results)\n\n"
-        f"{articles_list}"
-    )
+    # Retrieve initial clinical inquiry from messages
+    query = ""
+    messages = state.get("messages", [])
+    for msg in messages:
+        if isinstance(msg, HumanMessage) or getattr(msg, "type", None) == "human":
+            query = msg.content
+            break
+        elif isinstance(msg, dict) and msg.get("role") == "user":
+            query = msg.get("content", "")
+            break
 
     try:
-        # Directly invoke the tool logically
+        # Directly invoke the tool logically with full dossier context
         tool_result = send_email.invoke({
-            "evidence_report": combined_content,
-            "recipient_email": recipient_email
+            "evidence_report": evidence_report,
+            "recipient_email": recipient_email,
+            "articles_list": articles_list,
+            "query": query,
         })
-        reply_message = f"✅ **Email dispatch result:** {tool_result}"
+        reply_message = f"{tool_result}✅"
     except Exception as e:
         reply_message = f"❌ **Failed to send email:** {e}"
+
 
     return {
         "messages": [AIMessage(content=reply_message)],

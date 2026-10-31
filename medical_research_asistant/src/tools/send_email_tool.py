@@ -17,12 +17,16 @@ import smtplib
 import socket
 import ssl
 from datetime import datetime, timezone
+from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
+from typing import Optional
 
 import requests
 from langchain_core.tools import tool
+
+from tools.pdf_generator import generate_research_pdf
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -199,22 +203,54 @@ def _dispatch_via_emailjs(
     recipient_email: str,
     subject: str,
     html_body: str,
-    timeout: float = 15.0,
+    pdf_bytes: Optional[bytes] = None,
+    timeout: float = 20.0,
 ) -> str:
-    """Dispatches email via EmailJS REST API over HTTPS (Port 443)."""
-    try:
-        # Guarantee template_params stays strictly under 50KB (51,200 bytes)
-        safe_body = html_body
-        params_test = {
-            "to_email": recipient_email,
-            "subject": subject,
-            "message_html": safe_body,
-        }
-        test_bytes = len(json.dumps(params_test).encode("utf-8"))
-        if test_bytes > 48000:
-            overage = test_bytes - 46000
-            safe_body = safe_body[:-overage] + "</div></div></body></html>"
+    """
+    Dispatches email via EmailJS REST API over HTTPS (Port 443).
+    Attaches the clinical PDF dossier via /send-form, falling back to /send.
+    """
+    safe_body = html_body
+    params_test = {
+        "to_email": recipient_email,
+        "subject": subject,
+        "message_html": safe_body,
+    }
+    test_bytes = len(json.dumps(params_test).encode("utf-8"))
+    if test_bytes > 48000:
+        overage = test_bytes - 46000
+        safe_body = safe_body[:-overage] + "</div></div></body></html>"
 
+    # 1. Attempt /send-form with attached PDF
+    if pdf_bytes:
+        try:
+            files = {
+                "content": ("Medpedia_Evidence_Report.pdf", pdf_bytes, "application/pdf")
+            }
+            data = {
+                "service_id": service_id,
+                "template_id": template_id,
+                "user_id": public_key,
+                "to_email": recipient_email,
+                "subject": subject,
+                "message_html": safe_body,
+            }
+            if private_key:
+                data["accessToken"] = private_key
+
+            resp = requests.post(
+                "https://api.emailjs.com/api/v1.0/email/send-form",
+                data=data,
+                files=files,
+                timeout=timeout,
+            )
+            if resp.status_code == 200:
+                return "Email sent successfully."
+        except Exception:
+            pass  # Fall through to standard /send
+
+    # 2. Standard /send fallback
+    try:
         payload = {
             "service_id": service_id,
             "template_id": template_id,
@@ -249,9 +285,13 @@ def _dispatch_via_emailjs(
 def send_email(
     evidence_report: str,
     recipient_email: str,
+    articles_list: str = "",
+    query: str = "",
 ) -> str:
     """
-    Composes and sends the full evidence report as a styled HTML email.
+    Composes and sends the full evidence report as a styled HTML email with
+    an attached clinical PDF report containing complete literature citations,
+    websites, Medpedia details, and medical disclaimers.
     Supports EmailJS HTTPS REST API (Port 443 — works on Render Free Tier)
     and direct Gmail SMTP (STARTTLS on port 587).
 
@@ -260,6 +300,8 @@ def send_email(
                           builder agent (article cards + Overall Evidence
                           Summary). This is rendered as HTML in the email body.
         recipient_email:  Destination email address.
+        articles_list:    Retrieved literature citations and abstracts.
+        query:            Initial clinical question asked by the clinician.
 
     Returns:
         "Email sent successfully." on success, or an informative error description.
@@ -278,6 +320,18 @@ def send_email(
     report_html = _markdown_to_html(evidence_report)
     fitted_report_html = _fit_report_html(report_html, max_allowed_bytes=38000)
     subject = f"🔬 Medical Research Insights – {now}"
+
+    # Generate comprehensive PDF clinical dossier
+    pdf_bytes: Optional[bytes] = None
+    try:
+        pdf_bytes = generate_research_pdf(
+            evidence_report=evidence_report,
+            articles_list=articles_list,
+            query=query,
+            recipient_email=target_recipient,
+        )
+    except Exception as exc:
+        print(f"[WARN] PDF generation error: {exc}")
 
     # Build styled HTML body
     html_body = f"""<!DOCTYPE html>
@@ -350,6 +404,14 @@ def send_email(
             color: #4A5568;
             text-align: center;
         }}
+        .pdf-banner {{
+            background: linear-gradient(135deg, #EBF8FF 0%, #F0F4F8 100%);
+            border: 1px solid #BEE3F8;
+            border-left: 4px solid #3182CE;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin: 18px 0;
+        }}
         .footer {{
             background-color: #F7FAFC;
             padding: 20px 24px;
@@ -373,14 +435,23 @@ def send_email(
         </div>
         
         <div class="content">
+            <div class="pdf-banner">
+                <div style="font-weight: 700; color: #1A365D; font-size: 15px; margin-bottom: 4px;">
+                    📎 Attached Document: Medpedia_Evidence_Report.pdf
+                </div>
+                <div style="font-size: 13px; color: #4A5568; line-height: 1.4;">
+                    A publication-grade clinical evidence dossier containing complete PubMed/PMC literature citations, study details, websites, and medical disclaimers is attached to this email.
+                </div>
+            </div>
+
             {fitted_report_html}
         </div>
 
         <div class="footer">
-            <p>Generated by <strong>Medpedia</strong> Agentic Pipeline</p>
+            <p>Generated by <strong>Medpedia</strong> AI Biomedical Synthesis</p>
+            <p style="margin: 4px 0;"><a href="https://medpedia-smr.vercel.app" style="color: #3182CE; font-weight: 600;">Visit Medpedia Research Platform</a> &bull; Medline & PMC Citations</p>
             <span class="disclaimer">
-                <strong>Medical Disclaimer:</strong> This report is for informational purposes only and does not constitute medical advice. 
-                Always seek the advice of a physician or other qualified health provider with any questions regarding a medical condition.
+                <strong>Medical Disclaimer:</strong> This dossier is for informational and educational purposes only and does not constitute medical advice or clinical guidelines. Always seek the advice of a qualified physician or healthcare provider with any clinical questions.
             </span>
         </div>
     </div>
@@ -402,6 +473,7 @@ def send_email(
             recipient_email=target_recipient,
             subject=subject,
             html_body=html_body,
+            pdf_bytes=pdf_bytes,
         )
         if res == "Email sent successfully.":
             return res
@@ -430,20 +502,30 @@ def send_email(
 
     plain_text = (
         f"Medical Research Insights – {now}\n\n"
+        f"📎 Attached Document: Medpedia_Evidence_Report.pdf (Full Clinical Evidence Dossier)\n\n"
         f"{evidence_report.strip()}\n\n"
         f"─────────────────────────────────────────────\n"
         f"Generated by Medpedia Agentic Pipeline\n"
+        f"Platform: https://medpedia-smr.vercel.app\n"
         f"Medical Disclaimer: This report is for informational purposes only and does not constitute medical advice. "
         f"Always seek the advice of a physician or other qualified health provider with any questions regarding a medical condition.\n"
     )
 
-    msg = MIMEMultipart("alternative")
+    msg = MIMEMultipart("mixed")
     msg["Subject"] = subject
     msg["From"] = formataddr(("Medpedia", smtp_user))
     msg["To"] = target_recipient
 
-    msg.attach(MIMEText(plain_text, "plain", "utf-8"))
-    msg.attach(MIMEText(html_body, "html", "utf-8"))
+    alt_body = MIMEMultipart("alternative")
+    alt_body.attach(MIMEText(plain_text, "plain", "utf-8"))
+    alt_body.attach(MIMEText(html_body, "html", "utf-8"))
+    msg.attach(alt_body)
+
+    if pdf_bytes:
+        pdf_part = MIMEApplication(pdf_bytes, _subtype="pdf", Name="Medpedia_Evidence_Report.pdf")
+        pdf_part["Content-Disposition"] = 'attachment; filename="Medpedia_Evidence_Report.pdf"'
+        msg.attach(pdf_part)
+
 
     try:
         connect_host = smtp_host

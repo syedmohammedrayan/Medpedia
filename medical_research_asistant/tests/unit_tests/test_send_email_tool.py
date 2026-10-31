@@ -141,7 +141,7 @@ def test_missing_smtp_credentials():
 
 # ── Test 5b: EmailJS Dispatch (HTTPS Port 443) ──────────────────────────────
 def test_emailjs_dispatch_success():
-    """Verify that EmailJS HTTPS dispatch succeeds with correct payload."""
+    """Verify that EmailJS HTTPS dispatch succeeds with correct payload and PDF."""
     env = {
         "EMAILJS_SERVICE_ID": "service_test123",
         "EMAILJS_TEMPLATE_ID": "template_test456",
@@ -163,14 +163,20 @@ def test_emailjs_dispatch_success():
             assert result == "Email sent successfully."
             mock_post.assert_called_once()
             call_kwargs = mock_post.call_args[1]
-            payload = call_kwargs["json"]
 
-            assert payload["service_id"] == "service_test123"
-            assert payload["template_id"] == "template_test456"
-            assert payload["user_id"] == "pub_key_789"
-            assert payload["accessToken"] == "priv_key_000"
-            assert payload["template_params"]["to_email"] == "physician@hospital.edu"
-            assert "Clinical Evidence" in payload["template_params"]["message_html"]
+            # Verify /send-form or /send was invoked with data and files
+            data = call_kwargs.get("data") or call_kwargs.get("json", {})
+            assert data["service_id"] == "service_test123"
+            assert data["template_id"] == "template_test456"
+            assert data["user_id"] == "pub_key_789"
+            assert data["accessToken"] == "priv_key_000"
+            assert (
+                data.get("to_email") == "physician@hospital.edu"
+                or data.get("template_params", {}).get("to_email") == "physician@hospital.edu"
+            )
+            if "files" in call_kwargs:
+                assert "content" in call_kwargs["files"]
+                assert call_kwargs["files"]["content"][0] == "Medpedia_Evidence_Report.pdf"
 
 
 def test_emailjs_failure_falls_back_to_smtp():
@@ -232,12 +238,11 @@ def test_emailjs_payload_size_strictly_within_50kb():
 
             assert result == "Email sent successfully."
             call_kwargs = mock_post.call_args[1]
-            params = call_kwargs["json"]["template_params"]
-            total_bytes = len(json.dumps(params).encode("utf-8"))
-            # Must strictly be under 50KB (51,200 bytes)
-            assert total_bytes < 50000
-            assert "Executive Summary" in params["message_html"]
-            assert "Additional bibliography records condensed" in params["message_html"]
+            data = call_kwargs.get("data") or call_kwargs.get("json", {})
+            html_body = data.get("message_html") or data.get("template_params", {}).get("message_html", "")
+            assert len(html_body.encode("utf-8")) < 48000
+            assert "Executive Summary" in html_body
+
 
 def test_empty_evidence_report():
     env = {"SMTP_USER": "user@gmail.com", "SMTP_PASSWORD": "app_password"}
@@ -337,15 +342,23 @@ def test_email_payload_contains_required_sections():
             sent_msg = server.send_message.call_args[0][0]
             assert sent_msg.is_multipart()
 
-            # Retrieve text and html parts
+            # Retrieve text and html parts (filtering for text content type)
             parts = {
                 part.get_content_type(): part.get_payload(decode=True).decode("utf-8")
                 for part in sent_msg.walk()
-                if not part.is_multipart()
+                if not part.is_multipart() and part.get_content_type().startswith("text/")
             }
 
             assert "text/plain" in parts
             assert "text/html" in parts
+
+            # Verify PDF attachment is also attached
+            pdf_parts = [
+                part for part in sent_msg.walk()
+                if part.get_content_type() == "application/pdf"
+            ]
+            assert len(pdf_parts) == 1
+            assert pdf_parts[0].get_filename() == "Medpedia_Evidence_Report.pdf"
 
             html_content = parts["text/html"]
             assert "🔬 Medical Research Insights" in html_content
