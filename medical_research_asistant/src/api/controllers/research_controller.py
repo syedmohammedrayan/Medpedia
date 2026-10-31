@@ -69,40 +69,68 @@ class ResearchController:
             yield "data: [DONE]\n\n"
 
     @staticmethod
-    async def astream_resume(email: str, thread_id: str) -> AsyncGenerator[str, None]:
-        """Streams events after resuming from an interrupt."""
-        # Re-uses the same thread_id to access the paused graph state.
+    async def astream_resume(
+        email: str,
+        thread_id: str,
+        fallback_evidence: str | None = None,
+        fallback_query: str | None = None,
+    ) -> AsyncGenerator[str, None]:
+        """Streams events after resuming from an interrupt or gracefully dispatches if state was restored."""
         config = {"configurable": {"thread_id": thread_id}}
 
         try:
-            # Verify that the thread actually exists and is currently paused at an interrupt
             state = await graph.aget_state(config)
-            if not state.values or not state.next:
-                yield f"data: {json.dumps({'type': 'error', 'content': 'Session expired or server restarted while waiting for email. Please submit your research inquiry again.'})}\n\n"
+
+            # Scenario 1: Graph is currently paused at interrupt (email_collector)
+            if state.values and state.next:
+                async for event in graph.astream_events(Command(resume=email), config=config, version="v2"):
+                    kind = event["event"]
+
+                    if kind == "on_chat_model_stream":
+                        content = _extract_text(event["data"]["chunk"].content)
+                        if content:
+                            yield f"data: {json.dumps({'type': 'token', 'content': content})}\n\n"
+
+                    elif kind == "on_chain_end":
+                        node_name = event.get("metadata", {}).get("langgraph_node")
+                        if node_name:
+                            yield f"data: {json.dumps({'type': 'node_end', 'node': node_name})}\n\n"
+
+                            if node_name == "med_email_dispatcher":
+                                output = event.get("data", {}).get("output", {})
+                                if isinstance(output, dict) and "email_status" in output:
+                                    yield f"data: {json.dumps({'type': 'token', 'content': output['email_status']})}\n\n"
+
                 yield "data: [DONE]\n\n"
                 return
 
-            # Passes the provided email back into the graph via Command(resume=...).
-            async for event in graph.astream_events(Command(resume=email), config=config, version="v2"):
-                kind = event["event"]
+            # Scenario 2: Graph completed synthesis or state was restored from disk/fallback
+            evidence_report = (state.values.get("evidence_report") if state and state.values else None) or fallback_evidence
+            articles_list = (state.values.get("articles_report") if state and state.values else "") or ""
+            query = fallback_query or ""
+            if not query and state and state.values:
+                for msg in state.values.get("messages", []):
+                    if getattr(msg, "type", None) == "human" or (isinstance(msg, dict) and msg.get("role") == "user"):
+                        query = str(msg.content if hasattr(msg, "content") else msg.get("content", ""))
+                        break
 
-                if kind == "on_chat_model_stream":
-                    content = _extract_text(event["data"]["chunk"].content)
-                    if content:
-                        yield f"data: {json.dumps({'type': 'token', 'content': content})}\n\n"
+            if evidence_report:
+                yield f"data: {json.dumps({'type': 'node_start', 'node': 'med_email_dispatcher'})}\n\n"
+                from tools.send_email_tool import send_email
+                result = send_email.invoke({
+                    "evidence_report": evidence_report,
+                    "recipient_email": email,
+                    "articles_list": articles_list,
+                    "query": query or "Biomedical Literature Research Inquiry",
+                })
+                reply_message = f"{result} ✅" if "successfully" in str(result).lower() else f"❌ {result}"
+                yield f"data: {json.dumps({'type': 'token', 'content': reply_message})}\n\n"
+                yield f"data: {json.dumps({'type': 'node_end', 'node': 'med_email_dispatcher'})}\n\n"
+                yield "data: [DONE]\n\n"
+                return
 
-                elif kind == "on_chain_end":
-                    node_name = event.get("metadata", {}).get("langgraph_node")
-                    if node_name:
-                        yield f"data: {json.dumps({'type': 'node_end', 'node': node_name})}\n\n"
-
-                        # Because the dispatcher is now a direct Python function (not an LLM),
-                        # it does not fire chat stream tokens. We manually yield its output as a token.
-                        if node_name == "med_email_dispatcher":
-                            output = event.get("data", {}).get("output", {})
-                            if isinstance(output, dict) and "email_status" in output:
-                                yield f"data: {json.dumps({'type': 'token', 'content': output['email_status']})}\n\n"
-
+            # Scenario 3: Neither checkpointer state nor fallback evidence was found
+            yield f"data: {json.dumps({'type': 'error', 'content': 'Session expired or research inquiry not found. Please submit your inquiry again.'})}\n\n"
             yield "data: [DONE]\n\n"
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"

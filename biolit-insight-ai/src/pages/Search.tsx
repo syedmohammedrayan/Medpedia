@@ -70,7 +70,22 @@ const Search = () => {
 
   const sendMessage = async (text: string) => {
     setIsLoading(true);
-    if (!sessionRef.current) sessionRef.current = `thread-${Date.now()}`;
+
+    // Multi-user & Multi-inquiry Isolation:
+    // If not currently awaiting an email address, this represents a NEW clinical research inquiry.
+    // Assign a globally unique UUID thread_id so concurrent users and sequential queries never collide.
+    if (!waitingForEmailRef.current || !sessionRef.current) {
+      const uniqueSuffix = typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      sessionRef.current = `thread-${uniqueSuffix}`;
+      try {
+        sessionStorage.setItem("medpedia_active_thread_id", sessionRef.current);
+      } catch (e) {
+        // Handle private browsing storage limitations gracefully
+      }
+    }
+
     if (abortControllerRef.current) abortControllerRef.current.abort();
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -81,7 +96,19 @@ const Search = () => {
       
       if (waitingForEmailRef.current) {
         url = `${API_BASE}/research/resume-email`;
-        body = { email: text, thread_id: sessionRef.current };
+        
+        // Find the synthesized evidence report and original question as fallback
+        const lastAgentMsg = [...messages].reverse().find(
+          (m) => m.type === "agent" && m.content && !m.content.includes("To deliver your report by email") && !m.content.startsWith("Error:")
+        );
+        const originalUserMsg = messages.find((m) => m.type === "user");
+
+        body = {
+          email: text,
+          thread_id: sessionRef.current,
+          evidence_report: lastAgentMsg?.content || "",
+          query: originalUserMsg?.content || text,
+        };
         waitingForEmailRef.current = false;
       }
       const response = await fetch(url, {
@@ -146,6 +173,7 @@ const Search = () => {
       }]);
     } else if (data.type === "error") {
       setIsLoading(false);
+      waitingForEmailRef.current = false;
       setMessages((p) => [...p, {
         id: Date.now().toString(), type: "agent",
         content: `Error: ${data.content}`,

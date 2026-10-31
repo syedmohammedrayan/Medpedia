@@ -17,6 +17,8 @@ class ResearchRequest(BaseModel):
 class ResumeRequest(BaseModel):
     email: str
     thread_id: str
+    evidence_report: str | None = None
+    query: str | None = None
 
 @router.post("/start")
 async def start_research(request: ResearchRequest):
@@ -36,7 +38,12 @@ async def resume_email(request: ResumeRequest):
     # Returns a stream for the final email dispatch step.
     try:
         return StreamingResponse(
-            ResearchController.astream_resume(request.email, request.thread_id),
+            ResearchController.astream_resume(
+                email=request.email,
+                thread_id=request.thread_id,
+                fallback_evidence=request.evidence_report,
+                fallback_query=request.query,
+            ),
             media_type="text/event-stream"
         )
     except Exception as e:
@@ -100,21 +107,23 @@ async def dispatch_email(request: ResumeRequest):
 
     config = {"configurable": {"thread_id": request.thread_id}}
     state = await graph.aget_state(config)
-    if not state or not state.values:
-        raise HTTPException(status_code=404, detail="No active research session found for thread_id.")
 
-    evidence_report = state.values.get("evidence_report", "No evidence report available.")
-    articles_list = state.values.get("articles_report", "")
+    evidence_report = (state.values.get("evidence_report") if state and state.values else None) or request.evidence_report
+    if not evidence_report:
+        raise HTTPException(status_code=404, detail="No active research session or evidence report found for thread_id.")
 
-    query = ""
-    messages = state.values.get("messages", [])
-    for msg in messages:
-        if getattr(msg, "type", None) == "human" or (isinstance(msg, dict) and msg.get("role") == "user"):
-            query = str(msg.content if hasattr(msg, "content") else msg.get("content", ""))
-            break
-    if not query and messages:
-        first = messages[0]
-        query = str(first.content if hasattr(first, "content") else (first.get("content", "") if isinstance(first, dict) else ""))
+    articles_list = (state.values.get("articles_report") if state and state.values else "") or ""
+
+    query = request.query or ""
+    if not query and state and state.values:
+        messages = state.values.get("messages", [])
+        for msg in messages:
+            if getattr(msg, "type", None) == "human" or (isinstance(msg, dict) and msg.get("role") == "user"):
+                query = str(msg.content if hasattr(msg, "content") else msg.get("content", ""))
+                break
+        if not query and messages:
+            first = messages[0]
+            query = str(first.content if hasattr(first, "content") else (first.get("content", "") if isinstance(first, dict) else ""))
 
     try:
         result = send_email.invoke({

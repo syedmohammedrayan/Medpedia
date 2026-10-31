@@ -159,7 +159,12 @@ const NarrativeSynthesis = ({ data, threadId }: NarrativeSynthesisProps) => {
         </div>
       </div>
 
-      <EmailModal open={showEmailModal} onOpenChange={setShowEmailModal} threadId={threadId} />
+      <EmailModal
+        open={showEmailModal}
+        onOpenChange={setShowEmailModal}
+        threadId={threadId}
+        evidenceReport={data.synthesis}
+      />
     </motion.div>
   );
 };

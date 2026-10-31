@@ -223,13 +223,12 @@ builder.add_edge("med_evidence_builder", "email_collector")            # pause h
 builder.add_edge("email_collector",      "med_email_dispatcher")
 builder.add_edge("med_email_dispatcher", END)
 
-# Create a memory saver for local persistence (essential for FastAPI and Interrupts)
-# Keeps workflow state in memory so the interrupted graph can resume using the same thread_id.
-memory = MemorySaver()
+from agent.checkpointer import PersistentMemorySaver
 
-# LangGraph API manages persistence automatically — no custom checkpointer needed.
-# interrupt() works because the platform injects its own checkpointer at runtime.
-# For local FastAPI, we provide it explicitly.
+# Persistent checkpoint saver: guarantees multi-user isolation and durable state across server restarts.
+memory = PersistentMemorySaver()
+
+# Compile the multi-agent clinical research workflow graph with durable persistence.
 graph = builder.compile(checkpointer=memory)
 
 

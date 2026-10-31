@@ -2,6 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
+medpedia_checkpoints.pkl*
+*.pkl
+
 
 # C extensions
 *.so

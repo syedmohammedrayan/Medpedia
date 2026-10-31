@@ -16,11 +16,13 @@ interface EmailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   threadId?: string;
+  evidenceReport?: string;
+  query?: string;
 }
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
 
-const EmailModal = ({ open, onOpenChange, threadId }: EmailModalProps) => {
+const EmailModal = ({ open, onOpenChange, threadId, evidenceReport, query }: EmailModalProps) => {
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
@@ -58,6 +60,8 @@ const EmailModal = ({ open, onOpenChange, threadId }: EmailModalProps) => {
         body: JSON.stringify({
           email: cleanedEmail,
           thread_id: activeThreadId,
+          evidence_report: evidenceReport || "",
+          query: query || "",
         }),
       });
 
