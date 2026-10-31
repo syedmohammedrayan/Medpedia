@@ -315,8 +315,18 @@ def send_email(
 
     # 6. Dispatch via Gmail SMTP
     try:
+        connect_host = smtp_host
+        try:
+            # Prefer IPv4 to avoid broken IPv6 routes in cloud/container environments
+            addr_info = socket.getaddrinfo(smtp_host, smtp_port, socket.AF_INET, socket.SOCK_STREAM)
+            if addr_info:
+                connect_host = addr_info[0][4][0]
+        except Exception:
+            connect_host = smtp_host
+
         context = ssl.create_default_context()
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=smtp_timeout) as server:
+        with smtplib.SMTP(connect_host, smtp_port, timeout=smtp_timeout) as server:
+            server._host = smtp_host  # Preserves SNI hostname validation for STARTTLS
             server.ehlo()
             server.starttls(context=context)
             server.ehlo()
@@ -343,6 +353,15 @@ def send_email(
         return f"Error: Failed to connect to SMTP server '{smtp_host}:{smtp_port}': {exc}"
     except smtplib.SMTPException as exc:
         return f"Error: SMTP protocol error occurred: {exc}"
+    except OSError as exc:
+        if getattr(exc, "errno", None) == 101 or "unreachable" in str(exc).lower():
+            return (
+                "Error: Network is unreachable [Errno 101]. "
+                "Render Free Tier blocks outbound SMTP traffic on ports 25, 465, and 587 to prevent spam abuse. "
+                "To send emails via Gmail SMTP from cloud hosting, upgrade Render to a paid instance or deploy to a host that permits outbound port 587 (such as Koyeb)."
+            )
+        return f"Error: Network OS error ({getattr(exc, 'errno', 'unknown')}): {exc}"
     except Exception as exc:
         return f"Error: Unexpected error while sending email: {exc}"
+
 
