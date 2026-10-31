@@ -10,6 +10,7 @@ on Render Free Tier) with direct Gmail SMTP (port 587) fallback.
 """
 
 import html
+import json
 import os
 import re
 import smtplib
@@ -33,6 +34,7 @@ def _markdown_to_html(md: str) -> str:
     Enhanced Markdown → HTML converter for the evidence report.
     Converts headers, lists, links, bold, and card-style sections
     while ensuring safe HTML escaping of untrusted input.
+    Generates compact markup using CSS classes to avoid 50KB payload bloat.
     """
     link_re   = re.compile(r'\[([^\]]+)\]\((https?://[^\s)"\']+)\)')
     bold_re   = re.compile(r'\*\*(.+?)\*\*')
@@ -54,7 +56,7 @@ def _markdown_to_html(md: str) -> str:
             if in_list:
                 html_lines.append("</ul>")
                 in_list = False
-            html_lines.append('<hr style="border: none; border-top: 1px solid #E2E8F0; margin: 30px 0;">')
+            html_lines.append("<hr>")
             continue
 
         # Handle headings
@@ -63,30 +65,30 @@ def _markdown_to_html(md: str) -> str:
                 html_lines.append("</ul>")
                 in_list = False
             title = html.escape(stripped[4:])
-            html_lines.append(f'<h3 style="color: #2D3748; font-size: 18px; margin-top: 24px; margin-bottom: 12px;">{title}</h3>')
+            html_lines.append(f"<h3>{title}</h3>")
         elif stripped.startswith("## "):
             if in_list:
                 html_lines.append("</ul>")
                 in_list = False
             title = html.escape(stripped[3:])
-            html_lines.append(f'<h2 style="color: #1A365D; font-size: 22px; border-bottom: 2px solid #EBF8FF; padding-bottom: 8px; margin-top: 32px; margin-bottom: 16px;">{title}</h2>')
+            html_lines.append(f"<h2>{title}</h2>")
         elif stripped.startswith("# "):
             if in_list:
                 html_lines.append("</ul>")
                 in_list = False
             title = html.escape(stripped[2:])
-            html_lines.append(f'<h1 style="color: #2A4365; font-size: 26px; margin-top: 40px; margin-bottom: 20px;">{title}</h1>')
+            html_lines.append(f"<h1>{title}</h1>")
 
         # Handle lists
         elif stripped.startswith("- "):
             if not in_list:
-                html_lines.append('<ul style="padding-left: 20px; color: #4A5568;">')
+                html_lines.append("<ul>")
                 in_list = True
             content = html.escape(stripped[2:])
-            content = link_re.sub(r'<a href="\2" style="color: #3182CE; text-decoration: none; font-weight: 500;">\1</a>', content)
-            content = bold_re.sub(r'<strong style="color: #2D3748;">\1</strong>', content)
-            content = italic_re.sub(r'<em style="color: #4A5568;">\1</em>', content)
-            html_lines.append(f'<li style="margin-bottom: 8px;">{content}</li>')
+            content = link_re.sub(r'<a href="\2">\1</a>', content)
+            content = bold_re.sub(r"<strong>\1</strong>", content)
+            content = italic_re.sub(r"<em>\1</em>", content)
+            html_lines.append(f"<li>{content}</li>")
 
         # Handle empty lines
         elif stripped == "":
@@ -101,20 +103,59 @@ def _markdown_to_html(md: str) -> str:
                 html_lines.append("</ul>")
                 in_list = False
             processed = html.escape(stripped)
-            processed = link_re.sub(r'<a href="\2" style="color: #3182CE; text-decoration: none; font-weight: 500;">\1</a>', processed)
-            processed = bold_re.sub(r'<strong style="color: #2D3748;">\1</strong>', processed)
-            processed = italic_re.sub(r'<em style="color: #4A5568;">\1</em>', processed)
+            processed = link_re.sub(r'<a href="\2">\1</a>', processed)
+            processed = bold_re.sub(r"<strong>\1</strong>", processed)
+            processed = italic_re.sub(r"<em>\1</em>", processed)
 
             # Special check for article "Cards" header or badges
             if "Article #" in processed or "STUDY TYPE" in processed.upper() or "EVIDENCE" in processed.upper():
-                html_lines.append(f'<p style="margin: 10px 0; font-size: 15px; color: #2D3748; background-color: #F7FAFC; padding: 8px 12px; border-left: 4px solid #4299E1; border-radius: 4px;">{processed}</p>')
+                html_lines.append(f'<div class="card">{processed}</div>')
             else:
-                html_lines.append(f'<p style="margin: 8px 0; font-size: 15px; color: #4A5568;">{processed}</p>')
+                html_lines.append(f"<p>{processed}</p>")
 
     if in_list:
         html_lines.append("</ul>")
 
     return "\n".join(html_lines)
+
+
+def _fit_report_html(report_html: str, max_allowed_bytes: int = 38000) -> str:
+    """
+    Guarantees that the generated HTML content strictly fits within
+    EmailJS's 50KB total variables payload limit (51,200 bytes).
+    If report_html exceeds max_allowed_bytes, gracefully truncates at a
+    clean block boundary and appends a professional dashboard reference notice.
+    """
+    raw = report_html.encode("utf-8")
+    if len(raw) <= max_allowed_bytes:
+        return report_html
+
+    notice = (
+        '<div class="notice-card">'
+        '<em>📄 Note: Additional bibliography records condensed to meet email delivery limit (50KB). '
+        'The complete synthesis and full literature records are saved on your Medpedia Web Dashboard.</em>'
+        '</div>'
+    )
+    notice_bytes_len = len(notice.encode("utf-8"))
+    target_bytes = max_allowed_bytes - notice_bytes_len - 150
+    sliced = raw[:target_bytes].decode("utf-8", errors="ignore")
+
+    # Find the nearest clean tag boundary
+    best_cut = -1
+    for marker in ("</p>", "</div>", "</li>", "</ul>", "</h3>", "</h2>", "<hr>"):
+        idx = sliced.rfind(marker)
+        if idx > best_cut:
+            best_cut = idx + len(marker)
+
+    if best_cut > 1000:
+        safe_cut = sliced[:best_cut]
+    else:
+        safe_cut = sliced
+
+    if safe_cut.count("<ul>") > safe_cut.count("</ul>"):
+        safe_cut += "</ul>"
+
+    return safe_cut + "\n" + notice
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -162,6 +203,18 @@ def _dispatch_via_emailjs(
 ) -> str:
     """Dispatches email via EmailJS REST API over HTTPS (Port 443)."""
     try:
+        # Guarantee template_params stays strictly under 50KB (51,200 bytes)
+        safe_body = html_body
+        params_test = {
+            "to_email": recipient_email,
+            "subject": subject,
+            "message_html": safe_body,
+        }
+        test_bytes = len(json.dumps(params_test).encode("utf-8"))
+        if test_bytes > 48000:
+            overage = test_bytes - 46000
+            safe_body = safe_body[:-overage] + "</div></div></body></html>"
+
         payload = {
             "service_id": service_id,
             "template_id": template_id,
@@ -169,7 +222,7 @@ def _dispatch_via_emailjs(
             "template_params": {
                 "to_email": recipient_email,
                 "subject": subject,
-                "message_html": html_body,
+                "message_html": safe_body,
             },
         }
         if private_key:
@@ -223,6 +276,7 @@ def send_email(
 
     now = datetime.now(timezone.utc).strftime("%B %d, %Y")
     report_html = _markdown_to_html(evidence_report)
+    fitted_report_html = _fit_report_html(report_html, max_allowed_bytes=38000)
     subject = f"🔬 Medical Research Insights – {now}"
 
     # Build styled HTML body
@@ -231,9 +285,8 @@ def send_email(
 <head>
     <meta charset="UTF-8">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {{
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             line-height: 1.6;
             color: #2D3748;
             background-color: #F8FAFC;
@@ -241,62 +294,74 @@ def send_email(
             padding: 0;
         }}
         .container {{
-            max-width: 700px;
-            margin: 40px auto;
+            max-width: 680px;
+            margin: 20px auto;
             background-color: #ffffff;
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             border: 1px solid #E2E8F0;
         }}
         .header {{
             background: linear-gradient(135deg, #1A365D 0%, #2B6CB0 100%);
-            color: white;
-            padding: 40px 32px;
+            color: #ffffff;
+            padding: 30px 24px;
             text-align: center;
         }}
         .header h1 {{
             margin: 0;
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
-            letter-spacing: -0.025em;
+            color: #ffffff;
         }}
         .header p {{
-            margin: 10px 0 0;
+            margin: 8px 0 0;
             opacity: 0.9;
-            font-size: 16px;
+            font-size: 14px;
+            color: #E2E8F0;
         }}
         .content {{
-            padding: 32px;
+            padding: 24px;
         }}
-        .badge {{
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 9999px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-bottom: 8px;
+        h1 {{ color: #1A365D; font-size: 22px; margin-top: 28px; margin-bottom: 14px; }}
+        h2 {{ color: #2A4365; font-size: 18px; border-bottom: 2px solid #EBF8FF; padding-bottom: 6px; margin-top: 24px; margin-bottom: 12px; }}
+        h3 {{ color: #2D3748; font-size: 16px; margin-top: 18px; margin-bottom: 8px; }}
+        p {{ margin: 6px 0; font-size: 14px; color: #4A5568; line-height: 1.5; }}
+        ul {{ padding-left: 20px; color: #4A5568; margin: 8px 0; }}
+        li {{ margin-bottom: 6px; font-size: 14px; }}
+        a {{ color: #3182CE; text-decoration: none; font-weight: 500; }}
+        strong {{ color: #2D3748; }}
+        hr {{ border: none; border-top: 1px solid #E2E8F0; margin: 24px 0; }}
+        .card {{
+            margin: 8px 0;
+            font-size: 14px;
+            color: #2D3748;
+            background-color: #F7FAFC;
+            padding: 8px 12px;
+            border-left: 4px solid #4299E1;
+            border-radius: 4px;
+        }}
+        .notice-card {{
+            margin: 20px 0;
+            padding: 12px 16px;
+            background-color: #EDF2F7;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #4A5568;
+            text-align: center;
         }}
         .footer {{
             background-color: #F7FAFC;
-            padding: 24px 32px;
+            padding: 20px 24px;
             text-align: center;
-            font-size: 13px;
+            font-size: 12px;
             color: #718096;
             border-top: 1px solid #E2E8F0;
         }}
         .disclaimer {{
             font-style: italic;
-            margin-top: 12px;
+            margin-top: 8px;
             display: block;
-        }}
-        a {{
-            color: #3182CE;
-            text-decoration: none;
-        }}
-        a:hover {{
-            text-decoration: underline;
         }}
     </style>
 </head>
@@ -308,7 +373,7 @@ def send_email(
         </div>
         
         <div class="content">
-            {report_html}
+            {fitted_report_html}
         </div>
 
         <div class="footer">

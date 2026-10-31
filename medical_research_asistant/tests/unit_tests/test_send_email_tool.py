@@ -202,6 +202,42 @@ def test_emailjs_failure_falls_back_to_smtp():
                 mock_smtp.assert_called_once()
 
 
+def test_emailjs_payload_size_strictly_within_50kb():
+    """Verify that even with a massive 100KB+ evidence report, EmailJS payload stays strictly under 50KB."""
+    import json
+    env = {
+        "EMAILJS_SERVICE_ID": "service_test",
+        "EMAILJS_TEMPLATE_ID": "template_test",
+        "EMAILJS_PUBLIC_KEY": "pub_key_test",
+    }
+    massive_report = (
+        "## Executive Summary\n\n"
+        "Crucial clinical conclusions here.\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "## Source Articles\n\n"
+        + "\n\n".join([f"### Article #{i}: Long medical study\n- Detailed text content describing trial results and data: " + "Clinical data evidence. " * 30 for i in range(1, 100)])
+    )
+    assert len(massive_report.encode("utf-8")) > 60000
+
+    with patch.dict(os.environ, env, clear=True):
+        with patch("tools.send_email_tool.requests.post") as mock_post:
+            mock_resp = MagicMock()
+            mock_resp.status_code = 200
+            mock_post.return_value = mock_resp
+
+            result = send_email.invoke({
+                "evidence_report": massive_report,
+                "recipient_email": "physician@hospital.edu",
+            })
+
+            assert result == "Email sent successfully."
+            call_kwargs = mock_post.call_args[1]
+            params = call_kwargs["json"]["template_params"]
+            total_bytes = len(json.dumps(params).encode("utf-8"))
+            # Must strictly be under 50KB (51,200 bytes)
+            assert total_bytes < 50000
+            assert "Executive Summary" in params["message_html"]
+            assert "Additional bibliography records condensed" in params["message_html"]
 
 def test_empty_evidence_report():
     env = {"SMTP_USER": "user@gmail.com", "SMTP_PASSWORD": "app_password"}
