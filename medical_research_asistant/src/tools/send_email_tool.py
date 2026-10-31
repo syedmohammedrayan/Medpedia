@@ -429,7 +429,7 @@ def send_email(
     gmail_client_id = (os.getenv("GMAIL_CLIENT_ID") or "").strip()
     gmail_client_secret = (os.getenv("GMAIL_CLIENT_SECRET") or "").strip()
     gmail_refresh_token = (os.getenv("GMAIL_REFRESH_TOKEN") or "").strip()
-    gmail_sender = (os.getenv("GMAIL_SENDER_EMAIL") or os.getenv("SMTP_USER") or "syedmohammedrayan2007@gmail.com").strip()
+    gmail_sender = (os.getenv("GMAIL_SENDER_EMAIL") or os.getenv("SMTP_USER") or "hello051507@gmail.com").strip()
 
     if gmail_client_id and gmail_client_secret and gmail_refresh_token:
         res = _dispatch_via_gmail_api(
